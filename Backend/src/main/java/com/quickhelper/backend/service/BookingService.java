@@ -9,8 +9,11 @@ import com.quickhelper.backend.model.Booking;
 import com.quickhelper.backend.model.BookingStatus;
 import com.quickhelper.backend.model.User;
 import com.quickhelper.backend.model.UserRole;
+import com.quickhelper.backend.model.ProfileStatus;
+import com.quickhelper.backend.model.ProviderProfile;
 import com.quickhelper.backend.repository.BookingRepository;
 import com.quickhelper.backend.repository.UserRepository;
+import com.quickhelper.backend.repository.ProviderProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
 public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final ProviderProfileRepository providerProfileRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -42,6 +46,13 @@ public class BookingService {
 
         if (provider.getRole() != UserRole.PROVIDER) {
             throw new BadRequestException("Selected user is not a provider");
+        }
+
+        ProviderProfile providerProfile = providerProfileRepository.findByUser(provider)
+                .orElseThrow(() -> new BadRequestException("Provider does not have a profile"));
+
+        if (providerProfile.getProfileStatus() != ProfileStatus.APPROVED || !Boolean.TRUE.equals(providerProfile.getIsAvailable())) {
+            throw new BadRequestException("Provider is not available for bookings");
         }
 
         Booking booking = new Booking();

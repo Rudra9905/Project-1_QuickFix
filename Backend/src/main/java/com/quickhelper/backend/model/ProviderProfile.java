@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.quickhelper.backend.model.ProfileStatus;
 
 @Entity
 @Table(name = "provider_profiles")
@@ -24,6 +25,19 @@ public class ProviderProfile {
     @Column(name = "service_type", nullable = false)
     private ServiceType serviceType; // Offered service category
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "profile_status", nullable = false)
+    private ProfileStatus profileStatus = ProfileStatus.INCOMPLETE; // Lifecycle status
+
+    @Column(name = "experience_years")
+    private Integer experienceYears; // Experience in years
+
+    @Column(name = "resume_url")
+    private String resumeUrl; // Stored resume location or URL
+
+    @Column(name = "demo_video_url")
+    private String demoVideoUrl; // Stored demo video location or URL
+
     @Column(columnDefinition = "TEXT")
     private String description; // Optional service description
 
@@ -41,4 +55,10 @@ public class ProviderProfile {
 
     @Column(name = "is_available", nullable = false)
     private Boolean isAvailable = true; // Availability toggle
+
+    @Column(name = "is_approved", nullable = false)
+    private Boolean isApproved = false; // Derived approval flag (kept for backward compatibility)
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason; // Optional rejection explanation
 }

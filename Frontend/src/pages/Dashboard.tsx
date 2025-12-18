@@ -36,6 +36,13 @@ export const Dashboard = () => {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false)
   const [trackingStatus, setTrackingStatus] = useState<TrackingStatus>('on_the_way')
 
+  // Redirect admins to the admin dashboard
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      navigate('/admin', { replace: true })
+    }
+  }, [user?.role, navigate])
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return
@@ -145,7 +152,7 @@ export const Dashboard = () => {
 
   if (user?.role === 'PROVIDER') {
     // Render ProviderDashboard for providers
-    return <ProviderDashboard user={user} />
+    return <ProviderDashboard user={user as any} />
   }
 
   // Customer Dashboard - Premium Design

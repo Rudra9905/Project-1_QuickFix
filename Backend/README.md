@@ -30,7 +30,19 @@ This is the backend API for a Quick Helper booking platform (similar to Urban Co
 docker run --name quick-helper-mysql -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_DATABASE=quick_helper -p 3306:3306 -d mysql:8.0
 ```
 
-2. The application will automatically create the database schema on startup (using `spring.jpa.hibernate.ddl-auto=update`)
+2. The application will automatically create the database schema on startup
+
+**Note:** If you encounter a "Data truncated for column 'role'" error when registering as admin, please refer to the [DB_FIX.md](../DB_FIX.md) file for solutions.
+
+## File Upload Setup
+
+For file uploads to work properly:
+
+1. Ensure the `uploads` directory exists in the backend root folder
+2. Create subdirectories: `uploads/resumes` and `uploads/videos`
+3. Ensure the application has write permissions to these directories
+
+**Note:** If you encounter issues with file uploads, please refer to the [VIDEO_UPLOAD_TROUBLESHOOTING.md](../VIDEO_UPLOAD_TROUBLESHOOTING.md) file for solutions.
 
 ## Configuration
 
@@ -84,6 +96,21 @@ Content-Type: application/json
   "password": "password123"
 }
 ```
+
+#### Register Admin User (First User Only)
+```bash
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "admin123",
+  "role": "ADMIN"
+}
+```
+
+**Note:** Only the first user registered can become an admin. Subsequent registrations will automatically be assigned the USER role even if ADMIN is selected.
 
 ### Users
 
@@ -293,6 +320,15 @@ curl -X PUT http://localhost:8080/api/providers/1/location \
     "locationLng": -73.9855
   }'
 ```
+
+### 8. Access Admin Dashboard
+Once you've registered as an admin, you can access the admin dashboard at:
+
+```
+http://localhost:3000/admin
+```
+
+This dashboard allows you to review and approve/reject provider applications.
 
 ## Project Structure
 

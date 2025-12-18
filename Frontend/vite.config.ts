@@ -13,6 +13,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        secure: false,
+      },
+      // Allow accessing uploaded files (resumes/videos) via the dev server,
+      // so links like /uploads/resumes/... work in the browser during development.
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

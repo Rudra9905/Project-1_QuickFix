@@ -1,5 +1,5 @@
 // User role type: defines the two possible roles in the system
-export type UserRole = 'USER' | 'PROVIDER'
+export type UserRole = 'USER' | 'PROVIDER' | 'ADMIN'
 
 // Service type: defines the types of services that providers can offer
 export type ServiceType = 'PLUMBER' | 'ELECTRICIAN' | 'CLEANER' | 'LAUNDRY' | 'OTHER'
@@ -43,16 +43,24 @@ export interface AuthResponse {
 }
 
 // ProviderProfile interface: represents a service provider's profile
+export type ProfileStatus = 'INCOMPLETE' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'
+
 export interface ProviderProfile {
   id: number // Unique identifier for the provider profile
   userId: number // ID of the user who owns this provider profile
   serviceType: ServiceType // Type of service the provider offers
+  profileStatus: ProfileStatus // Lifecycle status for approval flow
+  experienceYears?: number // Experience in years
+  resumeUrl?: string // Resume PDF URL
+  demoVideoUrl?: string // Demo video URL
   description?: string // Optional description of the provider's services
   basePrice?: number // Optional base price for the service
   rating: number // Average rating from customer reviews (0-5)
   isAvailable: boolean // Whether the provider is currently available for bookings
+  isApproved: boolean // Whether the provider has been approved by admin
   locationLat?: number // Optional latitude coordinate for provider's location
   locationLng?: number // Optional longitude coordinate for provider's location
+  rejectionReason?: string // Optional rejection message from admin
 }
 
 // Provider service offering (multiple per provider)
@@ -78,6 +86,9 @@ export interface ServiceOfferingRequest {
 export interface ProviderCreateRequest {
   serviceType: ServiceType // Type of service the provider offers
   description?: string // Optional description of the provider's services
+  experienceYears?: number // Experience in years
+  resumeUrl?: string // Resume attachment URL
+  demoVideoUrl?: string // Demo video URL
   basePrice?: number // Optional base price for the service
   locationLat: number // Latitude coordinate for provider's location (required)
   locationLng: number // Longitude coordinate for provider's location (required)

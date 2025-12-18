@@ -14,7 +14,7 @@ export const Register = () => {
     confirmPassword: '',
     phone: '',
     city: '',
-    role: 'USER' as 'USER' | 'PROVIDER',
+    role: 'USER' as 'USER' | 'PROVIDER' | 'ADMIN',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -103,17 +103,18 @@ export const Register = () => {
               placeholder="+1234567890"
             />
             <Select
-              label="I want to"
+              label="I want to (Select ADMIN only if you're setting up the first admin user)"
               value={formData.role}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  role: e.target.value as 'USER' | 'PROVIDER',
+                  role: e.target.value as 'USER' | 'PROVIDER' | 'ADMIN',
                 })
               }
               options={[
                 { value: 'USER', label: 'Book Services' },
                 { value: 'PROVIDER', label: 'Provide Services' },
+                { value: 'ADMIN', label: 'Admin (First User Only)' },
               ]}
             />
             <Input

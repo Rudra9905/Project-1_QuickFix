@@ -63,9 +63,12 @@ export const CreateProviderProfile = () => {
         locationLng: parseFloat(formData.locationLng),
       })
       toast.success('Provider profile created successfully!')
-      navigate('/providers')
+      // Redirect to profile completion page after successful profile creation
+      navigate('/complete-provider-profile')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create profile')
+      console.error('Error creating provider profile:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create profile'
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }

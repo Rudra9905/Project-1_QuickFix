@@ -1,5 +1,7 @@
 // Import React hooks and types
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+// Import router hook so we can scope notifications by route
+import { useLocation } from 'react-router-dom'
 // Import notification service for API calls
 import { notificationService } from '../services/notificationService'
 // Import WebSocket service for real-time notifications
@@ -33,6 +35,8 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   // Get current authenticated user from auth context
   const { user } = useAuth()
+  // Get current location to decide where notifications should be active
+  const location = useLocation()
   // State to store all notifications
   const [notifications, setNotifications] = useState<Notification[]>([])
   // State to track count of unread notifications
@@ -42,11 +46,28 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   // State to track when notifications were last fetched (for polling fallback)
   const [lastFetchTime, setLastFetchTime] = useState<number>(0)
 
+  // Whether notifications (and API/WebSocket work) should run on this route
+  const isNotificationsRoute = () => {
+    if (!user) return false
+    const path = location.pathname
+
+    // User dashboard
+    if (user.role === 'USER' && path === '/dashboard') return true
+
+    // Provider dashboard (shares /dashboard route, but different UI)
+    if (user.role === 'PROVIDER' && path === '/dashboard') return true
+
+    // Admin dashboard
+    if (user.role === 'ADMIN' && path === '/admin') return true
+
+    return false
+  }
+
   // Load notifications from the API
   // Fetches notifications and unread count based on user role
   const loadNotifications = async () => {
-    // Don't load if user is not authenticated
-    if (!user) return
+    // Don't load if user is not authenticated or not on an allowed route
+    if (!user || !isNotificationsRoute()) return
 
     try {
       setIsLoading(true)
@@ -115,7 +136,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   // Polling fallback for WebSocket failures
   useEffect(() => {
-    if (!user) return
+    if (!user || !isNotificationsRoute()) return
 
     const pollInterval = setInterval(() => {
       // Check if WebSocket is connected, if not, refresh notifications
@@ -127,12 +148,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }, 10000) // Check every 10 seconds
 
     return () => clearInterval(pollInterval)
-  }, [user, lastFetchTime])
+  }, [user, lastFetchTime, location.pathname])
 
   useEffect(() => {
-    if (user) {
+    if (user && isNotificationsRoute()) {
       loadNotifications()
-      
+
       // Small delay to ensure user is fully loaded
       const connectTimer = setTimeout(() => {
         logInfo('Connecting WebSocket for user:', user.id, 'role:', user.role)
@@ -145,9 +166,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         websocketService.disconnect()
       }
     } else {
+      // If user logs out or navigates away from eligible routes, ensure cleanup
       websocketService.disconnect()
     }
-  }, [user?.id]) // Only depend on user.id to avoid reconnecting on every user object change
+  }, [user?.id, location.pathname]) // Depend on user and route so we can scope behavior
 
   const markAsRead = async (notificationId: number) => {
     try {

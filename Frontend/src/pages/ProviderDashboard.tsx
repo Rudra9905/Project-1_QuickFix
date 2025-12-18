@@ -30,7 +30,7 @@ const SERVICE_MAPPING: Record<string, { label: string; icon: any; color: string 
 }
 
 interface ProviderDashboardProps {
-  user: { id: number; name: string; email: string; role: 'PROVIDER' | 'USER' }
+  user: User
 }
 
 type JobTab = 'nearby' | 'recent'
@@ -68,22 +68,20 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
       if (showLoader) {
         setIsLoading(true)
       }
-      const [bookingsData, providersData] = await Promise.all([
+      const [bookingsData, providerData] = await Promise.all([
         bookingService.getBookingsByProvider(user.id),
-        providerService.getAllProviders(),
+        providerService.getProviderByUserId(user.id),
       ])
 
       setBookings(bookingsData)
-      
-      const profile = providersData.find(p => p.userId === user.id)
-      if (profile) {
-        setProviderProfile(profile)
-      }
+      setProviderProfile(providerData)
     } catch (error) {
       console.error('Failed to fetch data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
-      setIsLoading(false)
+      if (showLoader) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -125,7 +123,14 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
   const handleAvailabilityToggle = async (isAvailable: boolean) => {
     if (!providerProfile) {
-      toast.error('Provider profile not found')
+      toast.error('Please create a provider profile first')
+      navigate('/create-provider-profile')
+      return
+    }
+
+    // Check if provider is approved
+    if (!providerProfile.isApproved) {
+      toast.error('Your provider profile is pending approval')
       return
     }
 
@@ -227,6 +232,40 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
         <Loader size="lg" />
       </div>
     )
+  }
+
+  // If provider has no profile or profile is not approved, show appropriate prompt
+  if (!providerProfile || !providerProfile.isApproved) {
+    // If profile exists but is not approved, redirect to completion page
+    if (providerProfile && providerProfile.profileStatus !== 'APPROVED') {
+      navigate('/complete-provider-profile')
+      return null
+    }
+    
+    // If no profile exists, show prompt to create one
+    if (!providerProfile) {
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="bg-card rounded-3xl p-12 border border-slate-100 shadow-sm text-center max-w-md">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-primary text-2xl">person</span>
+              </div>
+              <h3 className="text-lg font-semibold text-text-dark mb-2">Create Your Provider Profile</h3>
+              <p className="text-text-muted mb-4">
+                You need to create a provider profile before you can start accepting job requests.
+              </p>
+              <button 
+                className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-light transition-colors"
+                onClick={() => navigate('/create-provider-profile')}
+              >
+                Create Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
   }
 
   const firstName = user.name.split(' ')[0]
@@ -411,26 +450,33 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
         {/* Right sidebar */}
         <div className="space-y-6">
-          {/* Availability status card */}
+          {/* Availability status card - only show if provider has a profile */}
           {providerProfile && (
                   <div className="bg-card rounded-3xl p-6 border border-slate-100 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-text-dark">Your Status</h3>
                       <div className={`size-3 rounded-full ${providerProfile.isAvailable ? 'bg-success' : 'bg-warning'}`}></div>
                     </div>
-                    <p className="text-sm text-text-muted mb-4">
-                      {providerProfile.isAvailable 
-                        ? 'You are currently accepting new job requests.' 
-                        : 'You are not accepting new job requests.'}
-                    </p>
+                    {!providerProfile.isApproved ? (
+                      <div className="bg-warning/10 border border-warning/20 rounded-xl p-3 mb-4">
+                        <p className="text-sm text-warning font-medium">Profile Pending Approval</p>
+                        <p className="text-xs text-warning">Your profile is awaiting admin approval.</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-text-muted mb-4">
+                        {providerProfile.isAvailable 
+                          ? 'You are currently accepting new job requests.' 
+                          : 'You are not accepting new job requests.'}
+                      </p>
+                    )}
                     <button
-                      disabled={isUpdatingAvailability}
+                      disabled={isUpdatingAvailability || !providerProfile.isApproved}
                       onClick={() => handleAvailabilityToggle(!providerProfile.isAvailable)}
                       className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
                         providerProfile.isAvailable
                           ? 'bg-warning/10 text-warning hover:bg-warning/20'
                           : 'bg-success/10 text-success hover:bg-success/20'
-                      }`}
+                      } ${!providerProfile.isApproved ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {providerProfile.isAvailable ? 'Go Offline' : 'Go Online'}
                     </button>

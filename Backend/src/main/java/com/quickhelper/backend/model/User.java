@@ -33,8 +33,8 @@ public class User {
     private String city; // Optional city preference
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserRole role; // USER or PROVIDER
+    @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20)")
+    private UserRole role; // USER, PROVIDER, or ADMIN
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

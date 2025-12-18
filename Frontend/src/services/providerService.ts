@@ -1,17 +1,14 @@
-// Import the API client for making HTTP requests
 import { apiClient } from './apiClient'
-// Import type definitions for provider-related data structures
 import type {
   ProviderProfile,
   ProviderCreateRequest,
   AvailabilityUpdate,
   LocationUpdate,
-  ServiceType,
   ServiceOffering,
   ServiceOfferingRequest,
+  ServiceType,
 } from '../types'
 
-// Provider service object containing methods for provider-related API operations
 export const providerService = {
   // Creates a new provider profile for a user
   // @param userId - The ID of the user creating the provider profile
@@ -26,6 +23,57 @@ export const providerService = {
       data
     )
     return response.data
+  },
+
+  // Updates an existing provider profile (when editable)
+  updateProfile: async (
+    profileId: number,
+    data: Partial<ProviderCreateRequest>
+  ): Promise<ProviderProfile> => {
+    const response = await apiClient.put<ProviderProfile>(`/providers/${profileId}`, data)
+    return response.data
+  },
+
+  // Submit profile for admin review
+  submitForReview: async (profileId: number): Promise<ProviderProfile> => {
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/submit`)
+    return response.data
+  },
+
+  // Upload resume PDF
+  uploadResume: async (profileId: number, file: File): Promise<ProviderProfile> => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/resume`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  // Upload demo video file
+  uploadDemoVideo: async (profileId: number, file: File): Promise<ProviderProfile> => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/demo-video`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  // Retrieves a provider profile by user ID
+  // @param userId - The ID of the user whose provider profile to fetch
+  // @returns Promise that resolves to the ProviderProfile object
+  getProviderByUserId: async (userId: number): Promise<ProviderProfile | null> => {
+    try {
+      const response = await apiClient.get<ProviderProfile>(`/providers/user/${userId}`)
+      return response.data
+    } catch (error: any) {
+      // If provider profile doesn't exist, return null
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
   },
 
   // Retrieves all provider profiles, optionally filtered by city or distance

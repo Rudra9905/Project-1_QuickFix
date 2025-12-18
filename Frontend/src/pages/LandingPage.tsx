@@ -299,7 +299,7 @@ export const LandingPage = () => {
                 <div className="w-9 h-9 rounded-2xl bg-primary text-white flex items-center justify-center shadow-soft">
                   <span className="text-xl font-semibold">Q</span>
                 </div>
-                <span className="font-semibold tracking-tight text-lg">QuickHelper</span>
+                <span className="font-semibold tracking-tight text-lg">QuickFix</span>
               </div>
               <p className="text-sm text-primary-100">
                 The fastest way to get household problems fixed. 30 minutes or it&apos;s free. Guaranteed.

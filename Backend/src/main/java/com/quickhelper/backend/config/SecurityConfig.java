@@ -1,5 +1,6 @@
 package com.quickhelper.backend.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -17,8 +19,10 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-// Basic stateless security setup with CORS and WebSocket allowances
+@RequiredArgsConstructor
+// Basic stateless security setup with JWT auth, CORS and WebSocket allowances
 public class SecurityConfig {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -46,12 +50,19 @@ public class SecurityConfig {
                         .disable()
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**").permitAll() // Allow WebSocket endpoint
-                        .anyRequest().permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**", "/ws/**", "/uploads/**").permitAll()
+                        // For MVP, allow all provider endpoints (including uploads) without auth
+                        .requestMatchers("/api/providers/**").permitAll()
+                        // Admin endpoints still restricted
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

@@ -18,7 +18,7 @@ interface AuthContextType {
     password: string
     phone?: string
     city?: string
-    role: 'USER' | 'PROVIDER'
+    role: 'USER' | 'PROVIDER' | 'ADMIN'
   }) => Promise<void> // Function to register a new user
   logout: () => void // Function to log out the current user
   isAuthenticated: boolean // Boolean indicating if user is authenticated
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string
     phone?: string
     city?: string
-    role: 'USER' | 'PROVIDER'
+    role: 'USER' | 'PROVIDER' | 'ADMIN'
   }) => {
     try {
       // Call the authentication service to register a new user

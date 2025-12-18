@@ -93,6 +93,24 @@ The app uses localStorage to store authentication tokens. The AuthContext provid
 - `/bookings` - Booking management (protected)
 - `/reviews` - Reviews (protected)
 - `/profile` - User profile (protected)
+- `/admin` - Admin dashboard (protected, admin users only)
+
+## Admin Setup
+
+To set up the admin user:
+
+1. Make sure the backend is running
+2. Go to the registration page at http://localhost:3000/register
+3. Fill in your details and select "Admin (First User Only)" as the role
+4. Click "Create Account"
+
+**Important:** Only the first user registered can become an admin. Any subsequent registrations will automatically be assigned the USER role, even if ADMIN is selected.
+
+Once registered as an admin, you can access the Admin Dashboard at http://localhost:3000/admin where you can review and manage provider applications.
+
+**Note:** If you encounter a "Data truncated for column 'role'" error when registering as admin, please refer to the [DB_FIX.md](../DB_FIX.md) file in the backend directory for solutions.
+
+**Note:** If you encounter issues with file uploads (resume or demo video), please refer to the [VIDEO_UPLOAD_TROUBLESHOOTING.md](../VIDEO_UPLOAD_TROUBLESHOOTING.md) file in the backend directory for solutions.
 
 ## Environment Variables
 

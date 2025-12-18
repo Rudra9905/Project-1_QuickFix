@@ -30,6 +30,7 @@ public class AuthController {
         user.setPassword(request.getPassword());
         user.setPhone(request.getPhone());
         user.setCity(request.getCity());
+        // Set role directly from request (USER, PROVIDER, or ADMIN)
         user.setRole(request.getRole());
 
         User savedUser = userService.registerUser(user);
