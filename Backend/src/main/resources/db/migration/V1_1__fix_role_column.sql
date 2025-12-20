@@ -1,2 +1,4 @@
--- Fix role column to accommodate ADMIN role
-ALTER TABLE users MODIFY COLUMN role VARCHAR(20) NOT NULL;
+-- Fix role column to accommodate ADMIN role (PostgreSQL syntax)
+ALTER TABLE users
+    ALTER COLUMN role TYPE VARCHAR(20),
+    ALTER COLUMN role SET NOT NULL;

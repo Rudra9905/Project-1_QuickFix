@@ -6,9 +6,9 @@ import { providerService } from '../services/providerService'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import type { Booking, BookingStatus, ServiceType, ProviderProfile } from '../types'
-import { 
-  CalendarIcon, 
-  UserIcon, 
+import {
+  CalendarIcon,
+  UserIcon,
   ClockIcon,
   DollarSignIcon,
   EyeIcon,
@@ -57,14 +57,14 @@ const formatBookingId = (id: number): string => {
 const formatBookingDate = (date: Date | string): string | null => {
   try {
     if (!date) return null
-    
+
     const dateObj = typeof date === 'string' ? parseISO(date) : date
-    
+
     // Check if date is valid
     if (!dateObj || isNaN(dateObj.getTime())) {
       return null
     }
-    
+
     if (isToday(dateObj)) {
       return `Today, ${format(dateObj, 'MMM d')}`
     } else if (isTomorrow(dateObj)) {
@@ -82,7 +82,7 @@ const formatBookingDate = (date: Date | string): string | null => {
 const formatBookingTime = (booking: Booking): string | null => {
   try {
     let startDate: Date | null = null
-    
+
     // If booking is accepted, use acceptedAt as service start time
     if (booking.acceptedAt) {
       const parsed = parseISO(booking.acceptedAt)
@@ -96,12 +96,12 @@ const formatBookingTime = (booking: Booking): string | null => {
         startDate = parsed
       }
     }
-    
+
     // Check if date is valid
     if (!startDate || isNaN(startDate.getTime())) {
       return null
     }
-    
+
     const startTime = format(startDate, 'h:mm a')
     return startTime
   } catch (error) {
@@ -158,7 +158,7 @@ export const Bookings = () => {
           : bookingService.getBookingsByProvider(user.id),
         providerService.getAllProviders()
       ])
-      
+
       setBookings(bookingsData)
       setProviderProfiles(providersData)
     } catch (error) {
@@ -201,7 +201,7 @@ export const Bookings = () => {
   const upcomingBookings = bookings.filter(
     (b) => b.status === 'REQUESTED' || b.status === 'ACCEPTED'
   )
-  
+
   // Past: COMPLETED, CANCELLED, or REJECTED status
   const pastBookings = bookings.filter(
     (b) => b.status === 'COMPLETED' || b.status === 'CANCELLED' || b.status === 'REJECTED'
@@ -245,11 +245,10 @@ export const Bookings = () => {
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                activeFilter === filter
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeFilter === filter
                   ? 'bg-primary text-white shadow-sm'
                   : 'text-text-muted hover:bg-surface'
-              }`}
+                }`}
             >
               {filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
@@ -272,7 +271,7 @@ export const Bookings = () => {
                   const serviceInfo = getServiceInfo(booking.serviceType)
                   const ServiceIcon = serviceInfo.icon
                   const statusInfo = STATUS_CONFIG[booking.status]
-                  
+
                   return (
                     <Card key={booking.id} className="overflow-hidden">
                       <CardContent className="p-5">
@@ -280,7 +279,7 @@ export const Bookings = () => {
                           {/* Left Section - Service Details */}
                           <div className="flex-1">
                             <div className="flex items-start gap-4">
-                              <div 
+                              <div
                                 className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                                 style={{ backgroundColor: `${serviceInfo.color}15` }}
                               >
@@ -327,7 +326,7 @@ export const Bookings = () => {
                             <div className="flex items-center gap-2 text-sm text-text-primary font-medium">
                               <DollarSignIcon size={16} color="#111827" />
                               <span>
-                                {getBookingPrice(booking) 
+                                {getBookingPrice(booking)
                                   ? `$${getBookingPrice(booking)}`
                                   : '-'}
                               </span>
@@ -369,13 +368,13 @@ export const Bookings = () => {
                   const serviceInfo = getServiceInfo(booking.serviceType)
                   const ServiceIcon = serviceInfo.icon
                   const statusInfo = STATUS_CONFIG[booking.status]
-                  
+
                   return (
                     <Card key={booking.id}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
                           {/* Service Icon */}
-                          <div 
+                          <div
                             className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: `${serviceInfo.color}15` }}
                           >
@@ -456,7 +455,7 @@ export const Bookings = () => {
               const ServiceIcon = serviceInfo.icon
               const statusInfo = STATUS_CONFIG[booking.status]
               const isUpcoming = booking.status === 'REQUESTED' || booking.status === 'ACCEPTED'
-              
+
               if (isUpcoming) {
                 return (
                   <Card key={booking.id} className="overflow-hidden">
@@ -464,7 +463,7 @@ export const Bookings = () => {
                       <div className="flex gap-5">
                         <div className="flex-1">
                           <div className="flex items-start gap-4">
-                            <div 
+                            <div
                               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                               style={{ backgroundColor: `${serviceInfo.color}15` }}
                             >
@@ -477,17 +476,17 @@ export const Bookings = () => {
                               <p className="text-sm text-text-secondary mb-3">
                                 Booking #{formatBookingId(booking.id)}
                               </p>
-                                <div className="space-y-2">
-                                  {(() => {
-                                    const serviceDate = getBookingServiceDate(booking)
-                                    const formattedDate = formatBookingDate(serviceDate instanceof Date ? serviceDate.toISOString() : serviceDate)
-                                    return formattedDate && (
-                                      <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                        <CalendarIcon size={16} color="#6B7280" />
-                                        <span>{formattedDate}</span>
-                                      </div>
-                                    )
-                                  })()}
+                              <div className="space-y-2">
+                                {(() => {
+                                  const serviceDate = getBookingServiceDate(booking)
+                                  const formattedDate = formatBookingDate(serviceDate instanceof Date ? serviceDate.toISOString() : serviceDate)
+                                  return formattedDate && (
+                                    <div className="flex items-center gap-2 text-sm text-text-secondary">
+                                      <CalendarIcon size={16} color="#6B7280" />
+                                      <span>{formattedDate}</span>
+                                    </div>
+                                  )
+                                })()}
                                 <div className="flex items-center gap-2 text-sm text-text-secondary">
                                   <UserIcon size={16} color="#6B7280" />
                                   {booking.provider?.name || 'Assigning provider...'}
@@ -504,7 +503,7 @@ export const Bookings = () => {
                           <div className="flex items-center gap-2 text-sm text-text-primary font-medium">
                             <DollarSignIcon size={16} color="#111827" />
                             <span>
-                              {getBookingPrice(booking) 
+                              {getBookingPrice(booking)
                                 ? `$${getBookingPrice(booking)}${booking.status === 'REQUESTED' ? ' (Est.)' : ''}`
                                 : booking.status === 'REQUESTED' ? 'Price TBD' : 'N/A'}
                             </span>
@@ -524,12 +523,12 @@ export const Bookings = () => {
                             </button>
                             {booking.status === 'ACCEPTED' ? (
                               <button className="w-full border border-primary text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors flex items-center justify-center gap-2">
-                                <MessageIcon size={16} color="#5B2D8B" />
+                                <MessageIcon size={16} color="#5B21B6" />
                                 Message Provider
                               </button>
                             ) : (
                               <button className="w-full border border-primary text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors flex items-center justify-center gap-2">
-                                <RescheduleIcon size={16} color="#5B2D8B" />
+                                <RescheduleIcon size={16} color="#5B21B6" />
                                 Reschedule
                               </button>
                             )}
@@ -547,7 +546,7 @@ export const Bookings = () => {
                         <div className="flex-1 space-y-4">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                              <div 
+                              <div
                                 className="size-12 rounded-xl flex items-center justify-center"
                                 style={{ backgroundColor: `${serviceInfo.color}50` }}
                               >
@@ -560,8 +559,8 @@ export const Bookings = () => {
                             </div>
                             <div
                               className="px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1"
-                              style={{ 
-                                backgroundColor: statusInfo.bg, 
+                              style={{
+                                backgroundColor: statusInfo.bg,
                                 color: statusInfo.text,
                                 borderColor: `${statusInfo.bg}20`
                               }}
@@ -580,7 +579,7 @@ export const Bookings = () => {
                                 </div>
                               )
                             })()
-}
+                            }
                             <div className="flex items-center gap-3 text-text-dark">
                               <span className="material-symbols-outlined text-text-muted">schedule</span>
                               <span className="font-medium">{formatBookingTime(booking)}</span>
@@ -589,9 +588,9 @@ export const Bookings = () => {
                               <span className="material-symbols-outlined text-text-muted">person</span>
                               <div className="flex items-center gap-2">
                                 <div className="size-6 rounded-full overflow-hidden bg-slate-200">
-                                  <img 
-                                    alt="Provider" 
-                                    className="w-full h-full object-cover" 
+                                  <img
+                                    alt="Provider"
+                                    className="w-full h-full object-cover"
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuCk0ICsazEquhUih1_BVwrfmJOD7wOysxjwi5MfLuspepSfbotORU71N84IHBJuJ5Li_4zcMY1uq0ok_iY-UiglmncLXJ5V0BN_yGQ4fYqIQAzfgfWm3H7nZ9fGRb4rdVkuD1NOW1-SWxR5ID_gVds7ubzumdk-_X944cxCyzyXawfg7JGC1ldFU32G7EeE-c60bqMCli_mIH4l7_sGHYvfGkz2y7m0ztZAAYiA3fa-y13njaKRu4dIjzdBcK8CwcNW2rdxXq9B7Tk"
                                   />
                                 </div>

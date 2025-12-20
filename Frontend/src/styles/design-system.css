@@ -4,120 +4,230 @@
    COLOR PALETTE
    ============================================ */
 
-/* Primary Brand Colors */
-.bg-primary { background-color: #4C0FA8; } /* Deep royal purple */
-.bg-primary-hover { background-color: #6432C4; } /* Hover / Active Purple */
-.bg-primary-accent { background-color: #7F5FF0; } /* Accent Purple (Selections) */
+/* Primary Brand Colors - Blue-Purple Gradient (Violet to Indigo) */
+.bg-primary {
+  background-color: #5B21B6;
+}
+
+/* Deep violet */
+.bg-primary-hover {
+  background-color: #6366F1;
+}
+
+/* Electric indigo */
+.bg-primary-accent {
+  background-color: #7C3AED;
+}
+
+/* Bright purple-blue */
 
 /* Background Colors */
-.bg-app { background-color: #F7F7FB; } /* Soft off-white with lavender hint */
-.bg-card { background-color: #FFFFFF; } /* Card Background */
-.bg-divider { background-color: #E5E7EB; } /* Divider / Border */
+.bg-app {
+  background-color: #F7F7FB;
+}
+
+/* Soft off-white with lavender hint */
+.bg-card {
+  background-color: #FFFFFF;
+}
+
+/* Card Background */
+.bg-divider {
+  background-color: #E5E7EB;
+}
+
+/* Divider / Border */
 
 /* Text Colors */
-.text-primary-heading { color: #0F172A; } /* Primary Text (Headings) */
-.text-secondary { color: #4B5563; } /* Secondary Text (Descriptions) */
-.text-muted { color: #94A3B8; } /* Muted Text (Helper labels) */
+.text-primary-heading {
+  color: #0F172A;
+}
+
+/* Primary Text (Headings) */
+.text-secondary {
+  color: #374151;
+}
+
+/* Secondary Text (Descriptions) - darker for better readability */
+.text-muted {
+  color: #6B7280;
+}
+
+/* Muted Text (Helper labels) - improved visibility */
 
 /* Action & Status Colors */
-.bg-success { background-color: #00B76B; }
-.text-success { color: #00B76B; }
-.bg-warning { background-color: #FF9D2B; }
-.text-warning { color: #FF9D2B; }
-.bg-error { background-color: #DC2626; }
-.text-error { color: #DC2626; }
-.bg-info { background-color: #00B6D8; }
-.text-info { color: #00B6D8; }
+.bg-success {
+  background-color: #00B76B;
+}
+
+.text-success {
+  color: #00B76B;
+}
+
+.bg-warning {
+  background-color: #FF9D2B;
+}
+
+.text-warning {
+  color: #FF9D2B;
+}
+
+.bg-error {
+  background-color: #DC2626;
+}
+
+.text-error {
+  color: #DC2626;
+}
+
+.bg-info {
+  background-color: #00B6D8;
+}
+
+.text-info {
+  color: #00B6D8;
+}
 
 /* Accent banner tones */
-.bg-accent-teal { background-color: #00B6D8; }
-.bg-accent-orange { background-color: #FF9D2B; }
-.bg-accent-navy { background-color: #102A66; }
+.bg-accent-teal {
+  background-color: #00B6D8;
+}
+
+.bg-accent-orange {
+  background-color: #FF9D2B;
+}
+
+.bg-accent-navy {
+  background-color: #102A66;
+}
 
 /* Text Color Utilities */
-.text-primary { color: #4C0FA8; }
-.text-primary-hover { color: #6432C4; }
-.text-primary-accent { color: #7F5FF0; }
+.text-primary {
+  color: #5B21B6;
+}
+
+.text-primary-hover {
+  color: #6366F1;
+}
+
+.text-primary-accent {
+  color: #7C3AED;
+}
 
 /* Border Colors */
-.border-primary { border-color: #4C0FA8; }
-.border-primary-hover { border-color: #6432C4; }
-.border-primary-accent { border-color: #7F5FF0; }
-.border-divider { border-color: #E5E7EB; }
-.border-muted { border-color: #94A3B8; }
+.border-primary {
+  border-color: #5B21B6;
+}
+
+.border-primary-hover {
+  border-color: #6366F1;
+}
+
+.border-primary-accent {
+  border-color: #7C3AED;
+}
+
+.border-divider {
+  border-color: #E5E7EB;
+}
+
+.border-muted {
+  border-color: #94A3B8;
+}
 
 /* ============================================
    TYPOGRAPHY
    ============================================ */
 
-.font-heading { 
-  font-family: 'Inter', 'Poppins', sans-serif; 
-  font-weight: 600; 
+.font-heading {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 600;
 }
 
-.font-body { 
-  font-family: 'Inter', 'Poppins', sans-serif; 
-  font-weight: 400; 
+.font-body {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 400;
 }
 
-.font-label { 
-  font-family: 'Inter', 'Poppins', sans-serif; 
-  font-weight: 500; 
+.font-label {
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-weight: 500;
 }
 
 /* Font Sizes */
 .text-page-title {
-  font-size: 22px;
-  line-height: 1.3;
-  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
   color: #0F172A;
 }
 
 .text-section-header {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 650;
   color: #0F172A;
 }
 
 .text-card-title {
   font-size: 16px;
-  line-height: 1.3;
-  font-weight: 500;
+  line-height: 1.4;
+  font-weight: 600;
   color: #0F172A;
 }
 
 .text-body {
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   font-weight: 400;
-  color: #4B5563;
+  color: #374151;
 }
 
 .text-helper {
   font-size: 12px;
   line-height: 1.5;
   font-weight: 500;
-  color: #94A3B8;
+  color: #6B7280;
 }
 
 /* ============================================
    SPACING
    ============================================ */
 
-/* Section gap: 24px */
-.space-section { margin-bottom: 24px; }
-.space-section-x { margin-right: 24px; }
+/* Section gap: 32px - increased for better separation */
+.space-section {
+  margin-bottom: 32px;
+}
 
-/* Card gap: 16px */
-.space-card { margin-bottom: 16px; }
-.space-card-x { margin-right: 16px; }
+.space-section-x {
+  margin-right: 32px;
+}
 
-/* Element gap: 8-12px */
-.space-element { margin-bottom: 12px; }
-.space-element-x { margin-right: 12px; }
-.space-element-sm { margin-bottom: 8px; }
-.space-element-sm-x { margin-right: 8px; }
+/* Card gap: 20px - increased for better breathing room */
+.space-card {
+  margin-bottom: 20px;
+}
+
+.space-card-x {
+  margin-right: 20px;
+}
+
+/* Element gap: 16px - improved spacing */
+.space-element {
+  margin-bottom: 16px;
+}
+
+.space-element-x {
+  margin-right: 16px;
+}
+
+.space-element-sm {
+  margin-bottom: 12px;
+}
+
+.space-element-sm-x {
+  margin-right: 12px;
+}
 
 /* ============================================
    CARDS
@@ -125,9 +235,12 @@
 
 .card-premium {
   background-color: #FFFFFF;
-  border-radius: 16px; /* 16px border radius */
-  padding: 20px; /* 16-20px padding */
-  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.06); /* Premium shadow */
+  border-radius: 16px;
+  /* 16px border radius */
+  padding: 24px;
+  /* Increased padding for better breathing room */
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.06);
+  /* Premium shadow */
   border: 1px solid #E5E7EB;
   transition: all 0.2s ease-in-out;
 }
@@ -137,7 +250,7 @@
 }
 
 .card-compact {
-  padding: 16px;
+  padding: 20px;
 }
 
 /* ============================================
@@ -145,11 +258,14 @@
    ============================================ */
 
 .btn-primary {
-  background-color: #4C0FA8; /* Deep Purple */
+  background-color: #5B21B6;
+  /* Deep violet */
   color: #ffffff;
-  border-radius: 12px; /* 12px border radius */
+  border-radius: 12px;
+  /* 12px border radius */
   font-weight: 500;
-  height: 48px; /* 48px height */
+  height: 48px;
+  /* 48px height */
   padding: 0 24px;
   transition: all 0.2s ease-in-out;
   border: none;
@@ -161,23 +277,30 @@
 }
 
 .btn-primary:hover {
-  background-color: #6432C4; /* Hover / Active Purple */
+  background-color: #6366F1;
+  /* Electric indigo */
 }
 
 .btn-primary:active {
-  background-color: #4C0FA8;
+  background-color: #4F46E5;
+  /* Deep indigo */
 }
 
 .btn-primary:disabled {
-  background-color: #9CA3AF; /* Gray background */
-  color: #6B7280; /* Muted text */
+  background-color: #9CA3AF;
+  /* Gray background */
+  color: #6B7280;
+  /* Muted text */
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background-color: #FFFFFF; /* White background */
-  color: #4C0FA8; /* Purple text */
-  border: 1px solid #4C0FA8; /* Purple border */
+  background-color: #FFFFFF;
+  /* White background */
+  color: #5B21B6;
+  /* Violet text */
+  border: 1px solid #5B21B6;
+  /* Violet border */
   border-radius: 12px;
   font-weight: 500;
   height: 48px;
@@ -191,7 +314,8 @@
 }
 
 .btn-secondary:hover {
-  background-color: #F1EAFE; /* Light lavender hover */
+  background-color: #EDE9FE;
+  /* Light violet hover */
 }
 
 .btn-secondary:active {
@@ -210,8 +334,10 @@
    ============================================ */
 
 .input-premium {
-  border-radius: 9999px; /* Rounded pill style */
-  border: 1px solid #E5E7EB; /* Soft borders */
+  border-radius: 9999px;
+  /* Rounded pill style */
+  border: 1px solid #E5E7EB;
+  /* Soft borders */
   padding: 12px 16px;
   font-size: 14px;
   transition: all 0.2s ease-in-out;
@@ -221,8 +347,9 @@
 
 .input-premium:focus {
   outline: none;
-  border-color: #4C0FA8; /* Purple border when selected */
-  box-shadow: 0 0 0 3px rgba(76, 15, 168, 0.1);
+  border-color: #5B21B6;
+  /* Violet border when selected */
+  box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
 }
 
 .input-premium:disabled {
@@ -242,7 +369,7 @@
 }
 
 .navbar-brand {
-  color: #4C0FA8;
+  color: #5B21B6;
   font-weight: 600;
   font-size: 20px;
 }
@@ -256,7 +383,7 @@
 }
 
 .navbar-hover-bg {
-  background-color: rgba(76, 15, 168, 0.1);
+  background-color: rgba(91, 33, 182, 0.1);
 }
 
 /* ============================================
@@ -264,7 +391,7 @@
    ============================================ */
 
 .notification-badge {
-  background-color: #4C0FA8;
+  background-color: #5B21B6;
   color: white;
   border-radius: 50%;
   font-weight: 600;
@@ -275,34 +402,53 @@
    SHADOWS
    ============================================ */
 
-.shadow-soft { 
-  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.06); 
+.shadow-soft {
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-.shadow-medium { 
-  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.08); 
+.shadow-medium {
+  box-shadow: 0px 12px 32px rgba(0, 0, 0, 0.08);
 }
 
-.shadow-large { 
-  box-shadow: 0px 16px 40px rgba(0, 0, 0, 0.1); 
+.shadow-large {
+  box-shadow: 0px 16px 40px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================
    BORDERS
    ============================================ */
 
-.rounded-xl { border-radius: 12px; }
-.rounded-2xl { border-radius: 16px; }
-.rounded-3xl { border-radius: 20px; }
-.rounded-pill { border-radius: 9999px; }
+.rounded-xl {
+  border-radius: 12px;
+}
+
+.rounded-2xl {
+  border-radius: 16px;
+}
+
+.rounded-3xl {
+  border-radius: 20px;
+}
+
+.rounded-pill {
+  border-radius: 9999px;
+}
 
 /* ============================================
    TRANSITIONS
    ============================================ */
 
-.transition-all { transition: all 0.2s ease-in-out; }
-.transition-transform { transition: transform 0.2s ease-in-out; }
-.transition-colors { transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out; }
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+.transition-transform {
+  transition: transform 0.2s ease-in-out;
+}
+
+.transition-colors {
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
 
 /* ============================================
    UTILITIES
@@ -322,13 +468,16 @@
    ============================================ */
 
 .icon-active {
-  color: #5B2D8B; /* Purple for active icons */
+  color: #5B21B6;
+  /* Violet for active icons */
 }
 
 .icon-inactive {
-  color: #9CA3AF; /* Gray for inactive icons */
+  color: #9CA3AF;
+  /* Gray for inactive icons */
 }
 
 .icon-hover {
-  color: #6C3EB8; /* Hover purple */
+  color: #6366F1;
+  /* Hover indigo */
 }

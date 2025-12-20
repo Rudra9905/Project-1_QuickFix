@@ -22,13 +22,12 @@ export const BottomNavigation = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                isActive
-                  ? 'text-primary'
-                  : 'text-text-muted'
-              }`}
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors py-2 ${isActive
+                ? 'text-primary'
+                : 'text-text-muted'
+                }`}
             >
-              <Icon size={24} color={isActive ? '#5B2D8B' : '#9CA3AF'} />
+              <Icon size={24} color={isActive ? '#5B21B6' : '#9CA3AF'} />
               <span className={`text-helper mt-1 ${isActive ? 'font-label' : ''}`}>
                 {item.label}
               </span>

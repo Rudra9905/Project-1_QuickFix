@@ -23,10 +23,10 @@ import {
 import type { Booking, ProviderProfile } from '../types'
 
 const SERVICE_MAPPING: Record<string, { label: string; icon: any; color: string }> = {
-  CLEANER: { label: 'Cleaning Specialist', icon: CleaningIcon, color: '#5B2ECC' },
+  CLEANER: { label: 'Cleaning Specialist', icon: CleaningIcon, color: '#5B21B6' },
   PLUMBER: { label: 'Plumbing Expert', icon: PlumbingIcon, color: '#F97316' },
   ELECTRICIAN: { label: 'Electrical Expert', icon: LightningIcon, color: '#F59E0B' },
-  LAUNDRY: { label: 'Laundry Service', icon: CleaningIcon, color: '#5B2ECC' },
+  LAUNDRY: { label: 'Laundry Service', icon: CleaningIcon, color: '#5B21B6' },
   OTHER: { label: 'Service Provider', icon: UserIcon, color: '#6B7280' },
 }
 
@@ -184,14 +184,14 @@ const ProviderProfileView = () => {
           prev.map((s) =>
             s.id === updated.id
               ? {
-                  id: updated.id,
-                  name: updated.name,
-                  description: updated.description || '',
-                  price: updated.price,
-                  unit: updated.unit,
-                  active: updated.active,
-                  color,
-                }
+                id: updated.id,
+                name: updated.name,
+                description: updated.description || '',
+                price: updated.price,
+                unit: updated.unit,
+                active: updated.active,
+                color,
+              }
               : s,
           ),
         )
@@ -217,14 +217,14 @@ const ProviderProfileView = () => {
           prev.map((s) =>
             s.id === updated.id
               ? {
-                  id: updated.id,
-                  name: updated.name,
-                  description: updated.description || '',
-                  price: updated.price,
-                  unit: updated.unit,
-                  active: updated.active,
-                  color,
-                }
+                id: updated.id,
+                name: updated.name,
+                description: updated.description || '',
+                price: updated.price,
+                unit: updated.unit,
+                active: updated.active,
+                color,
+              }
               : s,
           ),
         )
@@ -390,7 +390,7 @@ const ProviderProfileView = () => {
                       >
                         Cancel
                       </Button>
-                      <Button size="sm" className="bg-[#5B2ECC] text-white" onClick={handleAddService}>
+                      <Button size="sm" className="bg-primary text-white" onClick={handleAddService}>
                         Save Service
                       </Button>
                     </div>
@@ -456,7 +456,7 @@ const ProviderProfileView = () => {
                             >
                               Cancel
                             </Button>
-                            <Button size="sm" className="bg-[#5B2ECC] text-white" onClick={handleUpdateService}>
+                            <Button size="sm" className="bg-primary text-white" onClick={handleUpdateService}>
                               Save
                             </Button>
                           </div>
@@ -475,9 +475,8 @@ const ProviderProfileView = () => {
                             <p className="font-semibold text-text-primary flex items-center gap-2">
                               {svc.name}
                               <span
-                                className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-                                  svc.active ? 'bg-[#ECFDF3] text-[#22C55E]' : 'bg-[#F3F4F6] text-[#6B7280]'
-                                }`}
+                                className={`text-[11px] font-semibold px-2 py-1 rounded-full ${svc.active ? 'bg-[#ECFDF3] text-[#22C55E]' : 'bg-[#F3F4F6] text-[#6B7280]'
+                                  }`}
                               >
                                 {svc.active ? 'ACTIVE' : 'INACTIVE'}
                               </span>
@@ -601,10 +600,10 @@ export const Profile = () => {
   }
 
   const menuItems = [
-    { icon: MapPinIcon, label: 'Addresses', path: '/addresses', color: '#5B2D8B' },
-    { icon: WalletIcon, label: 'Payments', path: '/payments', color: '#5B2D8B' },
-    { icon: TagIcon, label: 'Coupons', path: '/coupons', color: '#5B2D8B' },
-    { icon: HeadphonesIcon, label: 'Support', path: '/support', color: '#5B2D8B' },
+    { icon: MapPinIcon, label: 'Addresses', path: '/addresses', color: '#5B21B6' },
+    { icon: WalletIcon, label: 'Payments', path: '/payments', color: '#5B21B6' },
+    { icon: TagIcon, label: 'Coupons', path: '/coupons', color: '#5B21B6' },
+    { icon: HeadphonesIcon, label: 'Support', path: '/support', color: '#5B21B6' },
   ]
 
   return (

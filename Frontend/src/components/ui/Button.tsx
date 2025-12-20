@@ -21,19 +21,19 @@ export const Button = ({
 
   const variants = {
     primary:
-      'bg-primary text-white hover:bg-primary-600 focus:ring-primary-500 h-12 rounded-xl',
+      'bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6366F1] text-white hover:from-[#8B5CF6] hover:via-[#9333EA] hover:to-[#7C3AED] hover:shadow-lg hover:shadow-purple-500/50 active:from-[#6D28D9] active:via-[#7C3AED] active:to-[#5B21B6] focus:ring-purple-500 h-12 rounded-xl font-semibold transition-all duration-200',
     secondary:
-      'bg-background-card text-primary border border-primary hover:bg-background-app focus:ring-primary-500 h-12 rounded-xl',
+      'bg-background-card text-[#7C3AED] border-2 border-[#7C3AED] hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 focus:ring-purple-500 h-12 rounded-xl font-medium',
     outline:
-      'border-2 border-primary text-primary hover:bg-background-app focus:ring-primary-500 h-12 rounded-xl bg-transparent',
+      'border-2 border-[#7C3AED] text-[#7C3AED] hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 focus:ring-purple-500 h-12 rounded-xl bg-transparent font-medium',
     ghost:
-      'text-text-secondary hover:bg-background-app focus:ring-primary-500 h-12 rounded-xl bg-transparent',
+      'text-[#7C3AED] hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 focus:ring-purple-500 h-12 rounded-xl bg-transparent font-medium',
   }
 
   const sizes = {
-    sm: 'px-4 py-2 text-sm h-10',
-    md: 'px-6 py-3 text-sm h-12',
-    lg: 'px-8 py-4 text-base h-14',
+    sm: 'px-5 py-2 text-sm h-10',
+    md: 'px-7 py-3 text-sm h-12',
+    lg: 'px-9 py-4 text-base h-14',
   }
 
   return (

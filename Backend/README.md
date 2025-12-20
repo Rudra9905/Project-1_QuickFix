@@ -12,7 +12,7 @@ This is the backend API for a Quick Helper booking platform (similar to Urban Co
 - **Spring Boot 3.2.0**
 - **Spring Data JPA**
 - **Spring Security** (configured with permitAll for MVP)
-- **MySQL** (running locally in Docker)
+- **PostgreSQL** (running locally in Docker)
 - **Maven**
 - **Lombok**
 
@@ -20,14 +20,14 @@ This is the backend API for a Quick Helper booking platform (similar to Urban Co
 
 - Java 17 or higher
 - Maven 3.6+
-- MySQL 8.0+ (running in Docker at localhost:3306)
-- Docker (for MySQL)
+- PostgreSQL 15+ (running in Docker at localhost:5432)
+- Docker (for PostgreSQL)
 
 ## Database Setup
 
-1. Start MySQL in Docker:
+1. Start PostgreSQL in Docker:
 ```bash
-docker run --name quick-helper-mysql -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_DATABASE=quick_helper -p 3306:3306 -d mysql:8.0
+docker run --name quick-helper-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=quick_helper -p 5432:5432 -d postgres:15
 ```
 
 2. The application will automatically create the database schema on startup
@@ -46,12 +46,12 @@ For file uploads to work properly:
 
 ## Configuration
 
-Update `src/main/resources/application.properties` if your MySQL credentials differ:
+Update `src/main/resources/application.properties` if your PostgreSQL credentials differ:
 
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/quick_helper?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=rootpw
+spring.datasource.url=jdbc:postgresql://localhost:5432/quick_helper
+spring.datasource.username=postgres
+spring.datasource.password=postgres
 ```
 
 ## Running the Application

@@ -38,7 +38,7 @@ export const ProviderReviewDetail = () => {
 
   const handleApprove = async () => {
     if (!provider) return
-    
+
     try {
       setIsSubmitting(true)
       await adminService.decideProvider(provider.id, 'APPROVE')
@@ -53,7 +53,7 @@ export const ProviderReviewDetail = () => {
 
   const handleReject = async () => {
     if (!provider) return
-    
+
     try {
       setIsSubmitting(true)
       await adminService.decideProvider(provider.id, 'REJECT', rejectReason)
@@ -103,12 +103,12 @@ export const ProviderReviewDetail = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={handleBack}
           className="mb-4"
         >
-          <ArrowLeftIcon size={16} color="#4C0FA8" className="mr-2" />
+          <ArrowLeftIcon size={16} color="#5B21B6" className="mr-2" />
           Back to Dashboard
         </Button>
         <h1 className="text-3xl font-bold text-text-primary">Provider Review</h1>
@@ -143,7 +143,7 @@ export const ProviderReviewDetail = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-text-secondary">Description</p>
                 <p className="font-medium">{provider.description || 'No description provided'}</p>
@@ -162,9 +162,9 @@ export const ProviderReviewDetail = () => {
                 {provider.resumeUrl ? (
                   <div className="border border-border rounded-lg p-4">
                     <p className="text-sm font-medium mb-2">Resume.pdf</p>
-                    <a 
-                      href={provider.resumeUrl} 
-                      target="_blank" 
+                    <a
+                      href={provider.resumeUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline"
                     >
@@ -175,15 +175,15 @@ export const ProviderReviewDetail = () => {
                   <p className="text-text-secondary">No resume uploaded</p>
                 )}
               </div>
-              
+
               <div>
                 <p className="text-sm text-text-secondary mb-2">Demo Video</p>
                 {provider.demoVideoUrl ? (
                   <div className="border border-border rounded-lg p-4">
                     <p className="text-sm font-medium mb-2">Demo.mp4</p>
-                    <a 
-                      href={provider.demoVideoUrl} 
-                      target="_blank" 
+                    <a
+                      href={provider.demoVideoUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline"
                     >
@@ -208,7 +208,7 @@ export const ProviderReviewDetail = () => {
               <p className="text-sm text-text-secondary">
                 Please review the provider's information and documents before making a decision.
               </p>
-              
+
               <div className="pt-4 space-y-3">
                 <Button
                   className="w-full"
@@ -218,7 +218,7 @@ export const ProviderReviewDetail = () => {
                   <CheckIcon size={16} color="white" className="mr-2" />
                   Approve Provider
                 </Button>
-                
+
                 <Textarea
                   label="Rejection Reason (Optional)"
                   value={rejectReason}
@@ -226,7 +226,7 @@ export const ProviderReviewDetail = () => {
                   placeholder="Provide a reason for rejection..."
                   rows={3}
                 />
-                
+
                 <Button
                   variant="outline"
                   className="w-full"

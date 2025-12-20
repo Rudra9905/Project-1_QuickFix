@@ -8,17 +8,17 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#4C0FA8', // Deep royal purple
-          50: '#F1EAFE',
-          100: '#E1D4FF',
-          200: '#C7B1FF',
-          300: '#A57FF2',
-          400: '#8C5BE6',
-          500: '#7F5FF0', // Accent Purple (Selections)
-          600: '#6432C4', // Hover / Active Purple
-          700: '#4C0FA8', // Deep Purple / Indigo
-          800: '#3B0C82',
-          900: '#2C0A68',
+          DEFAULT: '#5B21B6', // Deep violet
+          50: '#EDE9FE',
+          100: '#DDD6FE',
+          200: '#C4B5FD',
+          300: '#A78BFA',
+          400: '#8B5CF6',
+          500: '#7C3AED', // Bright purple-blue (Accent)
+          600: '#6366F1', // Electric indigo (Hover/Active)
+          700: '#5B21B6', // Deep violet (Primary)
+          800: '#4F46E5', // Deep indigo
+          900: '#4338CA',
         },
         text: {
           primary: '#0F172A', // Primary Text (Headings)

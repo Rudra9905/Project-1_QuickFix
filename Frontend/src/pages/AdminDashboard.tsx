@@ -68,7 +68,7 @@ export const AdminDashboard = () => {
           {pendingProviders.length === 0 ? (
             <div className="text-center py-12">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <CheckIcon size={24} color="#4C0FA8" />
+                <CheckIcon size={24} color="#5B21B6" />
               </div>
               <h3 className="text-lg font-medium text-text-primary mb-1">No pending applications</h3>
               <p className="text-text-secondary">All provider applications have been reviewed.</p>
@@ -76,9 +76,9 @@ export const AdminDashboard = () => {
           ) : (
             <div className="space-y-4">
               {pendingProviders.map((provider) => (
-                <div 
-                  key={provider.id} 
-                  className="flex items-center justify-between p-4 border border-border rounded-xl hover:bg-background-app transition-colors"
+                <div
+                  key={provider.id}
+                  className="flex items-center justify-between p-5 border border-border rounded-xl hover:bg-background-app transition-colors"
                 >
                   <div>
                     <h3 className="font-medium text-text-primary">{provider.userId}</h3>
@@ -88,12 +88,12 @@ export const AdminDashboard = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleViewProvider(provider.id)}
                     >
-                      <EyeIcon size={16} color="#4C0FA8" className="mr-2" />
+                      <EyeIcon size={16} color="#5B21B6" className="mr-2" />
                       Review
                     </Button>
                   </div>

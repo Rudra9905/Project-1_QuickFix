@@ -134,7 +134,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
 
       // Get user location
       const bookingUser = booking.user as User & { locationLat?: number; locationLng?: number }
-      
+
       if (bookingUser.locationLat && bookingUser.locationLng) {
         // User has coordinates
         setUserLocation({
@@ -179,9 +179,9 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(toRadians(lat1)) *
-        Math.cos(toRadians(lat2)) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2)
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return Math.round(R * c * 10) / 10 // Distance in km, rounded to 1 decimal
@@ -224,7 +224,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
       const providerMarker = window.L.marker([providerProfile.locationLat, providerProfile.locationLng], {
         icon: window.L.divIcon({
           className: 'custom-marker provider-marker',
-          html: '<div style="background-color: #5B2D8B; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><span style="color: white; font-weight: bold; font-size: 14px;">P</span></div>',
+          html: '<div style="background-color: #5B21B6; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><span style="color: white; font-weight: bold; font-size: 14px;">P</span></div>',
           iconSize: [30, 30],
           iconAnchor: [15, 15],
         }),
@@ -251,7 +251,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
           [providerProfile.locationLat, providerProfile.locationLng],
         ],
         {
-          color: '#5B2D8B',
+          color: '#5B21B6',
           weight: 3,
           opacity: 0.7,
           dashArray: '10, 5',
@@ -354,7 +354,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                 <span className="text-primary font-semibold text-lg">
-                  {isProvider 
+                  {isProvider
                     ? booking?.user?.name?.charAt(0) || 'U'
                     : booking?.provider?.name?.charAt(0) || 'P'}
                 </span>
@@ -376,7 +376,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
           {distance !== null && (
             <div className="mt-3 pt-3 border-t border-gray-200">
               <div className="flex items-center gap-2 text-sm">
-                <MapPinIcon size={16} color="#5B2D8B" />
+                <MapPinIcon size={16} color="#5B21B6" />
                 <span className="text-gray-700">
                   <span className="font-semibold text-primary">{distance} km</span> away
                 </span>
@@ -392,7 +392,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
           </div>
         ) : providerProfile?.locationLat && providerProfile?.locationLng && userLocation ? (
           <div className="relative">
-            <div 
+            <div
               ref={mapContainerRef}
               className="h-96 w-full rounded-lg border border-gray-200"
               style={{ zIndex: 1 }}
@@ -404,7 +404,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-primary hover:text-primary-600"
               >
-                <NavigationIcon size={16} color="#5B2D8B" />
+                <NavigationIcon size={16} color="#5B21B6" />
                 <span>Get Directions</span>
               </a>
             </div>
@@ -447,7 +447,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
           </div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <UserIcon size={20} color="#5B2D8B" />
+              <UserIcon size={20} color="#5B21B6" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Service Type</p>

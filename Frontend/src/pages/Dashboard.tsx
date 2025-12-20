@@ -53,7 +53,7 @@ export const Dashboard = () => {
           // Find active booking (ACCEPTED status)
           const active = bookings.find(b => b.status === 'ACCEPTED')
           setActiveBooking(active || null)
-          
+
           // Get recent bookings (last 30 days, completed or accepted)
           const thirtyDaysAgo = new Date()
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -74,7 +74,7 @@ export const Dashboard = () => {
     }
 
     fetchData()
-    
+
     // Refresh active booking periodically for real-time updates
     const refreshInterval = setInterval(() => {
       if (user?.role === 'USER' && activeBooking) {
@@ -125,7 +125,7 @@ export const Dashboard = () => {
 
   const getStatusText = () => {
     if (!activeBooking) return 'No active service'
-    
+
     switch (trackingStatus) {
       case 'on_the_way':
         return `${activeBooking.provider.name.split(' ')[0]} is on the way.`
@@ -170,8 +170,8 @@ export const Dashboard = () => {
 
       {/* Booking Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div 
-          className="group relative flex flex-col items-center justify-center gap-4 rounded-3xl bg-card p-10 text-center shadow-sm border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer h-64"
+        <div
+          className="group relative flex flex-col items-center justify-center gap-4 rounded-3xl bg-card p-12 text-center shadow-sm border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer h-64"
           onClick={() => handleBookingTypeClick('single')}
         >
           <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
@@ -185,9 +185,9 @@ export const Dashboard = () => {
             <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
           </div>
         </div>
-        
-        <div 
-          className="group relative flex flex-col items-center justify-center gap-4 rounded-3xl bg-card p-10 text-center shadow-sm border border-slate-100 hover:border-accent-teal/30 hover:shadow-md transition-all cursor-pointer h-64"
+
+        <div
+          className="group relative flex flex-col items-center justify-center gap-4 rounded-3xl bg-card p-12 text-center shadow-sm border border-slate-100 hover:border-accent-teal/30 hover:shadow-md transition-all cursor-pointer h-64"
           onClick={() => handleBookingTypeClick('multiple')}
         >
           <div className="size-14 rounded-2xl bg-accent-teal/10 flex items-center justify-center text-accent-teal mb-2 group-hover:scale-110 transition-transform duration-300">
@@ -207,8 +207,8 @@ export const Dashboard = () => {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-text-dark">Services</h2>
-          <a 
-            className="text-sm font-medium text-primary hover:text-primary-light transition-colors" 
+          <a
+            className="text-sm font-medium text-primary hover:text-primary-light transition-colors"
             href="#"
             onClick={(e) => {
               e.preventDefault()
@@ -220,7 +220,7 @@ export const Dashboard = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {POPULAR_SERVICES.map((service, index) => (
-            <div 
+            <div
               key={index}
               className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-card p-8 border border-slate-100 hover:border-primary/20 hover:shadow-sm transition-all cursor-pointer group"
               onClick={() => navigate('/select-provider', { state: { serviceType: service.value } })}
@@ -251,7 +251,7 @@ export const Dashboard = () => {
                 <p className="text-white/70 text-xs">Professional</p>
               </div>
             </div>
-            <button 
+            <button
               className="mt-6 rounded-lg bg-white py-2 px-4 text-sm font-medium text-primary hover:bg-primary-light transition-colors"
               onClick={() => setIsTrackingModalOpen(true)}
             >
