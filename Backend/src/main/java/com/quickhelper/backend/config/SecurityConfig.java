@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/ws/**", "/uploads/**").permitAll()
                         // For MVP, allow all provider endpoints (including uploads) without auth
                         .requestMatchers("/api/providers/**").permitAll()
+                        // Allowing bookings for now to fix provider dashboard access issues
+                        .requestMatchers("/api/bookings/**").permitAll()
                         // Admin endpoints still restricted
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication

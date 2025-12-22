@@ -30,6 +30,7 @@ public class BookingService {
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final NotificationService notificationService;
+    private final org.springframework.scheduling.TaskScheduler taskScheduler;
 
     @Transactional
     // Creates a new booking request from a user to a provider
@@ -63,6 +64,10 @@ public class BookingService {
         booking.setStatus(BookingStatus.REQUESTED);
 
         Booking saved = bookingRepository.save(booking);
+        
+        // Schedule auto-rejection check in 2 minutes
+        taskScheduler.schedule(() -> checkAndRejectBooking(saved.getId()), 
+            java.time.Instant.now().plus(2, java.time.temporal.ChronoUnit.MINUTES));
         
         try {
             // Send notification to provider
@@ -100,6 +105,28 @@ public class BookingService {
         }
         
         return mapToBookingResponseDTO(saved);
+    }
+
+    @Transactional
+    public void checkAndRejectBooking(Long bookingId) {
+        bookingRepository.findById(bookingId).ifPresent(booking -> {
+            if (booking.getStatus() == BookingStatus.REQUESTED) {
+                booking.setStatus(BookingStatus.REJECTED);
+                if (booking.getNote() == null) {
+                    booking.setNote("Auto-rejected due to timeout");
+                } else {
+                    booking.setNote(booking.getNote() + " (Auto-rejected due to timeout)");
+                }
+                bookingRepository.save(booking);
+                
+                // Notify user
+                 notificationService.notifyBookingRejected(
+                    booking.getUser().getId(),
+                    booking.getId(),
+                    booking.getProvider().getName()
+                );
+            }
+        });
     }
 
     public List<BookingResponseDTO> getBookingsByUser(Long userId) {

@@ -12,4 +12,5 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser(User user);
     List<Booking> findByProvider(User provider);
+    List<Booking> findByStatusAndCreatedAtBefore(com.quickhelper.backend.model.BookingStatus status, java.time.LocalDateTime dateTime);
 }

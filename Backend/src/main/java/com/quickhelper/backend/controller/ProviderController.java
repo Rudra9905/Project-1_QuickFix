@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
@@ -83,6 +84,45 @@ public class ProviderController {
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             System.err.println("Error uploading demo video for provider ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @PostMapping("/{id}/portfolio-image")
+    // Upload portfolio image and attach to profile
+    public ResponseEntity<ProviderResponseDTO> uploadPortfolioImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            System.out.println("Uploading portfolio image for provider ID: " + id);
+            String url = fileStorageService.storeFile(
+                    file,
+                    Set.of("image/jpeg", "image/png", "image/gif", "image/webp"),
+                    5 * 1024 * 1024, // 5MB
+                    "portfolio");
+            ProviderResponseDTO profile = providerService.addPortfolioImage(id, url);
+            System.out.println("Portfolio image uploaded successfully for provider ID: " + id);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            System.err.println("Error uploading portfolio image for provider ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @DeleteMapping("/{id}/portfolio-image")
+    // Remove portfolio image from profile
+    public ResponseEntity<ProviderResponseDTO> removePortfolioImage(
+            @PathVariable Long id,
+            @RequestParam("imageUrl") String imageUrl) {
+        try {
+            System.out.println("Removing portfolio image for provider ID: " + id);
+            ProviderResponseDTO profile = providerService.removePortfolioImage(id, imageUrl);
+            System.out.println("Portfolio image removed successfully for provider ID: " + id);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            System.err.println("Error removing portfolio image for provider ID " + id + ": " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

@@ -38,7 +38,7 @@ export const Sidebar = () => {
           const pending = bookingsData.filter(b => b.status === 'REQUESTED').length
           setPendingBookingsCount(pending)
         })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [user])
 
@@ -76,9 +76,8 @@ export const Sidebar = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-card border-r border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out z-30 ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-card border-r border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out z-30 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <nav className="flex-1 space-y-2 px-4 py-6">
           {filteredItems.map((item) => {
@@ -88,11 +87,10 @@ export const Sidebar = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                  isActive
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${isActive
                     ? 'bg-primary/10 text-primary font-semibold'
                     : 'text-text-muted hover:bg-surface hover:text-text-dark'
-                }`}
+                  }`}
               >
                 <span className={`material-symbols-outlined ${isActive ? 'fill-1' : ''}`}>
                   {item.icon}

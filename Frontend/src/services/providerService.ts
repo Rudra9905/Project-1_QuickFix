@@ -60,6 +60,24 @@ export const providerService = {
     return response.data
   },
 
+  // Upload portfolio image
+  uploadPortfolioImage: async (profileId: number, file: File): Promise<ProviderProfile> => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/portfolio-image`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  // Remove portfolio image
+  removePortfolioImage: async (profileId: number, imageUrl: string): Promise<ProviderProfile> => {
+    const response = await apiClient.delete<ProviderProfile>(`/providers/${profileId}/portfolio-image`, {
+      params: { imageUrl: imageUrl }
+    })
+    return response.data
+  },
+
   // Retrieves a provider profile by user ID
   // @param userId - The ID of the user whose provider profile to fetch
   // @returns Promise that resolves to the ProviderProfile object
@@ -91,7 +109,7 @@ export const providerService = {
     // Build URL with appropriate query parameters
     let url = '/providers';
     const params = new URLSearchParams();
-    
+
     if (userLat !== undefined && userLng !== undefined && maxDistanceKm !== undefined) {
       console.log(`Adding distance parameters: lat=${userLat}, lng=${userLng}, maxDistance=${maxDistanceKm}`);
       // Use distance-based filtering
@@ -103,14 +121,14 @@ export const providerService = {
       // Use city-based filtering
       params.append('city', city);
     }
-    
+
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
-    
+
     console.log('Making GET request to:', url);
     const response = await apiClient.get<ProviderProfile[]>(url)
-    console.log('Received response:', response.data);
+    // console.log('Received response:', response.data);
     return response.data;
   },
 
@@ -132,7 +150,7 @@ export const providerService = {
     // Build URL with serviceType and appropriate query parameters
     let url = `/providers/available?serviceType=${serviceType}`;
     const params = new URLSearchParams();
-    
+
     if (userLat !== undefined && userLng !== undefined && maxDistanceKm !== undefined) {
       console.log(`Adding distance parameters for available providers: lat=${userLat}, lng=${userLng}, maxDistance=${maxDistanceKm}`);
       // Use distance-based filtering
@@ -144,11 +162,11 @@ export const providerService = {
       // Use city-based filtering
       params.append('city', city);
     }
-    
+
     if (params.toString()) {
       url += `&${params.toString()}`;
     }
-    
+
     console.log('Making GET request to:', url);
     const response = await apiClient.get<ProviderProfile[]>(url)
     console.log('Received response for available providers:', response.data);

@@ -127,8 +127,7 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
 
       // Get provider location
       if (booking.provider?.id) {
-        const providers = await providerService.getAllProviders()
-        const profile = providers.find(p => p.userId === booking.provider.id)
+        const profile = await providerService.getProviderByUserId(booking.provider.id)
         setProviderProfile(profile || null)
       }
 

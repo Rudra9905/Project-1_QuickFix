@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 // Request body for updating a provider profile (allowed when not under review)
 public class ProviderUpdateRequestDTO {
@@ -28,4 +30,12 @@ public class ProviderUpdateRequestDTO {
     private Double locationLat;
 
     private Double locationLng;
+    
+    private List<String> portfolioImages;
+    
+    private String displayName; // Provider's display/business name
+    
+    private String profilePhotoUrl; // Profile photo URL
+    
+    private String tagline; // Professional tagline
 }

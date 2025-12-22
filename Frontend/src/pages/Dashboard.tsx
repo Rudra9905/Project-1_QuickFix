@@ -74,54 +74,7 @@ export const Dashboard = () => {
     }
 
     fetchData()
-
-    // Refresh active booking periodically for real-time updates
-    const refreshInterval = setInterval(() => {
-      if (user?.role === 'USER' && activeBooking) {
-        fetchData()
-      }
-    }, 10000) // Refresh every 10 seconds
-
-    return () => clearInterval(refreshInterval)
-  }, [user, activeBooking?.id])
-
-  // Listen for notifications to update tracking status
-  useEffect(() => {
-    if (!activeBooking) return
-
-    const relatedNotifications = notifications.filter(
-      n => n.relatedBookingId === activeBooking.id && !n.isRead
-    )
-
-    // Check for status-related notifications
-    relatedNotifications.forEach(notification => {
-      const message = notification.message.toLowerCase()
-      if (message.includes('on the way') || message.includes('heading')) {
-        setTrackingStatus('on_the_way')
-      } else if (message.includes('reached') || message.includes('arrived')) {
-        setTrackingStatus('reached')
-      }
-    })
-  }, [notifications, activeBooking])
-
-  // Simulate status progression (in real app, this would come from location updates)
-  useEffect(() => {
-    if (!activeBooking || trackingStatus === 'arrived') return
-
-    const statusInterval = setInterval(() => {
-      // Simulate status progression based on time elapsed
-      const elapsed = new Date().getTime() - new Date(activeBooking.acceptedAt || activeBooking.createdAt).getTime()
-      const minutesElapsed = elapsed / (1000 * 60)
-
-      if (minutesElapsed > 15 && trackingStatus === 'on_the_way') {
-        setTrackingStatus('reached')
-      } else if (minutesElapsed > 20 && trackingStatus === 'reached') {
-        setTrackingStatus('arrived')
-      }
-    }, 30000) // Check every 30 seconds
-
-    return () => clearInterval(statusInterval)
-  }, [activeBooking, trackingStatus])
+  }, [user])
 
   const getStatusText = () => {
     if (!activeBooking) return 'No active service'
@@ -139,7 +92,11 @@ export const Dashboard = () => {
   }
 
   const handleBookingTypeClick = (type: 'single' | 'multiple') => {
-    navigate('/select-provider', { state: { bookingType: type } })
+    if (type === 'single') {
+      navigate('/providers')
+    } else {
+      navigate('/select-provider', { state: { bookingType: type } })
+    }
   }
 
   if (isLoading) {
@@ -188,7 +145,7 @@ export const Dashboard = () => {
 
         <div
           className="group relative flex flex-col items-center justify-center gap-4 rounded-3xl bg-card p-12 text-center shadow-sm border border-slate-100 hover:border-accent-teal/30 hover:shadow-md transition-all cursor-pointer h-64"
-          onClick={() => handleBookingTypeClick('multiple')}
+          onClick={() => navigate('/book/multiple-dates')}
         >
           <div className="size-14 rounded-2xl bg-accent-teal/10 flex items-center justify-center text-accent-teal mb-2 group-hover:scale-110 transition-transform duration-300">
             <span className="material-symbols-outlined text-3xl">calendar_view_month</span>

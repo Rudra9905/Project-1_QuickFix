@@ -28,6 +28,9 @@ public class ProviderService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     @Transactional
     // Creates a provider profile for a given user (must have PROVIDER role)
     public ProviderResponseDTO createProviderProfile(Long userId, ProviderCreateRequestDTO request) {
@@ -75,14 +78,10 @@ public class ProviderService {
     }
 
     @Transactional
-    // Allows provider to update profile details before submission
+    // Allows provider to update profile details
     public ProviderResponseDTO updateProviderProfile(Long profileId, ProviderUpdateRequestDTO request) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
-
-        if (profile.getProfileStatus() == ProfileStatus.PENDING_APPROVAL || profile.getProfileStatus() == ProfileStatus.APPROVED) {
-            throw new IllegalStateException("Profile cannot be edited while under review or after approval");
-        }
 
         // Core editable fields
         profile.setServiceType(request.getServiceType());
@@ -91,13 +90,33 @@ public class ProviderService {
         profile.setBasePrice(request.getBasePrice());
         profile.setLocationLat(request.getLocationLat());
         profile.setLocationLng(request.getLocationLng());
+        
+        // Update enhanced profile fields
+        if (request.getDisplayName() != null) {
+            profile.setDisplayName(request.getDisplayName());
+        }
+        if (request.getProfilePhotoUrl() != null) {
+            profile.setProfilePhotoUrl(request.getProfilePhotoUrl());
+        }
+        if (request.getTagline() != null) {
+            profile.setTagline(request.getTagline());
+        }
+        
+        // Update portfolio images if provided
+        if (request.getPortfolioImages() != null) {
+            profile.setPortfolioImages(new ArrayList<>(request.getPortfolioImages()));
+        }
 
         // IMPORTANT: Do NOT overwrite resume/demo video here.
         // They are managed via dedicated upload endpoints so that
         // updating text fields does not accidentally clear the URLs.
+        
+        // If profile was under review, reset status to incomplete after editing
+        if (profile.getProfileStatus() == ProfileStatus.PENDING_APPROVAL) {
+            profile.setProfileStatus(ProfileStatus.INCOMPLETE);
+            profile.setIsApproved(false);
+        }
         profile.setRejectionReason(null); // Clear previous rejection reason on update
-        profile.setProfileStatus(ProfileStatus.INCOMPLETE);
-        profile.setIsApproved(false);
 
         ProviderProfile updated = providerProfileRepository.save(profile);
         return mapToProviderResponseDTO(updated);
@@ -150,6 +169,39 @@ public class ProviderService {
         profile.setProfileStatus(ProfileStatus.INCOMPLETE);
         profile.setIsApproved(false);
         profile.setRejectionReason(null);
+        ProviderProfile updated = providerProfileRepository.save(profile);
+        return mapToProviderResponseDTO(updated);
+    }
+    
+    @Transactional
+    // Add a portfolio image to the provider's profile
+    public ProviderResponseDTO addPortfolioImage(Long profileId, String imageUrl) {
+        ProviderProfile profile = providerProfileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
+
+        // Initialize portfolio images list if null
+        if (profile.getPortfolioImages() == null) {
+            profile.setPortfolioImages(new ArrayList<>());
+        }
+
+        // Add the new image URL
+        profile.getPortfolioImages().add(imageUrl);
+        
+        ProviderProfile updated = providerProfileRepository.save(profile);
+        return mapToProviderResponseDTO(updated);
+    }
+    
+    @Transactional
+    // Remove a portfolio image from the provider's profile
+    public ProviderResponseDTO removePortfolioImage(Long profileId, String imageUrl) {
+        ProviderProfile profile = providerProfileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
+
+        profile.getPortfolioImages().remove(imageUrl);
+        
+        // Delete from Cloudinary
+        fileStorageService.deleteFile(imageUrl);
+        
         ProviderProfile updated = providerProfileRepository.save(profile);
         return mapToProviderResponseDTO(updated);
     }
@@ -369,7 +421,7 @@ public class ProviderService {
     }
 
     private ProviderResponseDTO mapToProviderResponseDTO(ProviderProfile profile) {
-        return new ProviderResponseDTO(
+        ProviderResponseDTO dto = new ProviderResponseDTO(
                 profile.getId(),
                 profile.getUser().getId(),
                 profile.getServiceType(),
@@ -384,7 +436,20 @@ public class ProviderService {
                 profile.getIsApproved(),
                 profile.getLocationLat(),
                 profile.getLocationLng(),
-                profile.getRejectionReason()
+                profile.getRejectionReason(),
+                profile.getDisplayName(),
+                profile.getProfilePhotoUrl(),
+                profile.getTagline()
         );
+        dto.setPortfolioImages(profile.getPortfolioImages());
+        
+        // Set user information for display
+        ProviderResponseDTO.UserInfo userInfo = new ProviderResponseDTO.UserInfo(
+                profile.getUser().getName(),
+                profile.getUser().getCity()
+        );
+        dto.setUser(userInfo);
+        
+        return dto;
     }
 }

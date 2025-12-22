@@ -625,3 +625,14 @@ export const UploadIcon: React.FC<IconProps> = ({ className = '', size = 24, col
     <rect x="20" y="36" width="24" height="2" fill={color} opacity="0.3" />
   </svg>
 )
+
+// Image Icon for placeholder
+export const ImageIcon: React.FC<IconProps> = ({ className = '', size = 24, color = '#6B7280' }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="12" width="48" height="40" rx="2" fill={color} opacity="0.1" />
+    <rect x="8" y="12" width="48" height="40" rx="2" stroke={color} strokeWidth="2" />
+    <circle cx="24" cy="28" r="6" fill={color} opacity="0.3" />
+    <path d="M8 40L20 28L32 40L44 28L56 40V52H8V40Z" fill={color} opacity="0.2" />
+    <path d="M8 40L20 28L32 40L44 28L56 40" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)

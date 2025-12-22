@@ -61,7 +61,16 @@ export interface ProviderProfile {
   locationLat?: number // Optional latitude coordinate for provider's location
   locationLng?: number // Optional longitude coordinate for provider's location
   rejectionReason?: string // Optional rejection message from admin
+  portfolioImages?: string[] // Optional array of portfolio image URLs
+  displayName?: string // Provider's display/business name
+  profilePhotoUrl?: string // Profile photo URL
+  tagline?: string // Professional tagline
+  user?: { // Optional user info for display
+    name: string
+    city?: string
+  }
 }
+
 
 // Provider service offering (multiple per provider)
 export interface ServiceOffering {
@@ -105,6 +114,8 @@ export interface Booking {
   createdAt: string // Timestamp when the booking was created (ISO format)
   acceptedAt?: string // Optional timestamp when the booking was accepted
   completedAt?: string // Optional timestamp when the service was completed
+  bookingDate?: string // Date of the service
+  preferredTime?: string // Time of the service
 }
 
 // BookingRequest interface: data structure for creating a new booking request

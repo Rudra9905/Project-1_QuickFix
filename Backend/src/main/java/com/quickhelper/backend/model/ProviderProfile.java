@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.quickhelper.backend.model.ProfileStatus;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "provider_profiles")
 @Data
@@ -60,5 +63,19 @@ public class ProviderProfile {
     private Boolean isApproved = false; // Derived approval flag (kept for backward compatibility)
 
     @Column(name = "rejection_reason")
-    private String rejectionReason; // Optional rejection explanation
+    private String rejectionReason;
+    
+    @Column(name = "display_name")
+    private String displayName; // Provider's display/business name
+    
+    @Column(name = "profile_photo_url")
+    private String profilePhotoUrl; // Profile photo URL
+    
+    @Column(name = "tagline")
+    private String tagline; // Professional tagline
+
+    @ElementCollection
+    @CollectionTable(name = "provider_portfolio_images", joinColumns = @JoinColumn(name = "provider_profile_id"))
+    @Column(name = "image_url")
+    private List<String> portfolioImages = new ArrayList<>(); // Optional rejection explanation
 }

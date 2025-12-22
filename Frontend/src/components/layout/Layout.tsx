@@ -35,7 +35,7 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
     setCurrentAddress({
       fullAddress: user?.city || ''
     })
-    
+
     // If user is a provider, fetch their provider profile to get location data
     if (user?.role === 'PROVIDER') {
       fetchProviderProfile()
@@ -43,9 +43,11 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
   }, [user?.city, user?.id, user?.role])
 
   const fetchProviderProfile = async () => {
+    // Avoid re-fetching if we already have the profile
+    if (providerProfile) return
+
     try {
-      const providers = await providerService.getAllProviders()
-      const profile = providers.find(p => p.userId === user?.id)
+      const profile = await providerService.getProviderByUserId(user?.id!)
       if (profile) {
         setProviderProfile(profile)
       }
@@ -56,7 +58,7 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
 
   const handleAddressSave = async (newAddress: string, lat: number, lng: number) => {
     if (!user) return;
-    
+
     try {
       if (user.role === 'PROVIDER' && providerProfile) {
         // For providers, update both user city and provider location
@@ -67,12 +69,12 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
             locationLng: lng
           })
         ])
-        
+
         // Update the auth context with the new user data
         updateUser({
           city: newAddress
         })
-        
+
         // Update provider profile in state
         setProviderProfile({
           ...providerProfile,
@@ -82,16 +84,16 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
       } else {
         // For regular users, only update user city
         await userService.updateUserCity(user.id, newAddress)
-        
+
         // Update the auth context with the new user data
         updateUser({
           city: newAddress
         })
       }
-      
+
       // Parse the full address to extract components
       const parsedAddress = parseFullAddress(newAddress)
-      
+
       // Update local state
       setCurrentAddress(parsedAddress)
       setShowAddressEditor(false)
@@ -107,46 +109,46 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
   const parseFullAddress = (fullAddress: string): AddressDetails => {
     // This is a simple parser - in a real implementation, you might want to use
     // a more robust address parsing library
-    
+
     const parts = fullAddress.split(',').map(part => part.trim())
-    
+
     // Simple heuristic to extract address components
     const addressObj: AddressDetails = {
       fullAddress: fullAddress
     }
-    
+
     if (parts.length >= 1) {
       // Try to identify components by common patterns
       // This is a simplified approach and may not work for all addresses
-      
+
       // Look for pincode (typically numeric)
       const pincodeRegex = /\b\d{5,6}\b/
       const pincodeMatch = fullAddress.match(pincodeRegex)
       if (pincodeMatch) {
         addressObj.pincode = pincodeMatch[0]
       }
-      
+
       // Assume last non-empty part is likely country
       if (parts.length > 0) {
         addressObj.country = parts[parts.length - 1]
       }
-      
+
       // Assume second to last is likely state/province
       if (parts.length > 1) {
         addressObj.state = parts[parts.length - 2]
       }
-      
+
       // Assume third to last is likely city
       if (parts.length > 2) {
         addressObj.city = parts[parts.length - 3]
       }
-      
+
       // Area/neighborhood is often before city
       if (parts.length > 3) {
         addressObj.area = parts[parts.length - 4]
       }
     }
-    
+
     return addressObj
   }
 
@@ -155,49 +157,49 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
     if (!currentAddress.fullAddress) {
       return 'Click to set address'
     }
-    
+
     // Try to show a meaningful address portion with city, area, etc.
     const displayParts = []
-    
+
     if (currentAddress.area) {
       displayParts.push(currentAddress.area)
     }
-    
+
     if (currentAddress.city) {
       displayParts.push(currentAddress.city)
     } else if (currentAddress.state) {
       // Fallback to state if no city
       displayParts.push(currentAddress.state)
     }
-    
+
     // Add pincode if available and we have other parts
     if (currentAddress.pincode && displayParts.length > 0) {
       displayParts.push(currentAddress.pincode)
     }
-    
+
     // If we couldn't extract components, use the original approach
     if (displayParts.length === 0) {
       const parts = currentAddress.fullAddress.split(',').map(part => part.trim())
-      
+
       // Show up to 3 parts for brevity in the navbar
       if (parts.length > 3) {
         return parts.slice(0, 3).join(', ')
       }
-      
+
       return currentAddress.fullAddress
     }
-    
+
     // Limit to 3 parts for navbar display
     if (displayParts.length > 3) {
       return displayParts.slice(0, 3).join(', ')
     }
-    
+
     return displayParts.join(', ')
   }
 
   return (
     <div className="bg-surface font-display text-text-muted antialiased h-screen flex flex-col">
-      <Navbar 
+      <Navbar
         onEditAddress={() => setShowAddressEditor(true)}
         address={formatAddressForDisplay()}
       />

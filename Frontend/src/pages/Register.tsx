@@ -56,7 +56,11 @@ export const Register = () => {
         city: formData.city || undefined,
         role: formData.role,
       })
-      navigate('/dashboard')
+      if (formData.role === 'PROVIDER') {
+        navigate('/provider-setup')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (error) {
       // Error handled by auth context
     } finally {

@@ -33,7 +33,21 @@ export const Login = () => {
     setIsLoading(true)
     try {
       await login(email, password)
-      navigate('/dashboard')
+      try {
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          const userData = JSON.parse(storedUser)
+          if (userData.role === 'PROVIDER') {
+            navigate('/provider-setup')
+          } else {
+            navigate('/dashboard')
+          }
+        } else {
+          navigate('/dashboard')
+        }
+      } catch (e) {
+        navigate('/dashboard')
+      }
     } catch (error) {
       // Error handled by auth context
     } finally {

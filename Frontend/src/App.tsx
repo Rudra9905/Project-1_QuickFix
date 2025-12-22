@@ -13,12 +13,13 @@ import { SelectProvider } from './pages/SelectProvider'
 import { Bookings } from './pages/Bookings'
 import { Reviews } from './pages/Reviews'
 import { Profile } from './pages/Profile'
-import { CreateProviderProfile } from './pages/CreateProviderProfile'
 import { LandingPage } from './pages/LandingPage'
-import Earnings from './pages/Earnings'// Root application component: sets up providers and route configuration
+import Earnings from './pages/Earnings'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { ProviderReviewDetail } from './pages/ProviderReviewDetail'
-import { ProviderProfileCompletion } from './pages/ProviderProfileCompletion'
+import { ProviderProfileSetup } from './pages/ProviderProfileSetup'
+import { MultipleBookingDates } from './pages/MultipleBookingDates'
+
 function App() {
   return (
     <BrowserRouter>
@@ -54,6 +55,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <SelectProvider />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/book/multiple-dates"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MultipleBookingDates />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -99,25 +110,18 @@ function App() {
               }
             />
             <Route
-              path="/create-provider-profile"
+              path="/provider-setup"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <CreateProviderProfile />
+                    <ProviderProfileSetup />
                   </Layout>
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/complete-provider-profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProviderProfileCompletion />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+            {/* Legacy routes redirect to new unified page */}
+            <Route path="/create-provider-profile" element={<Navigate to="/provider-setup" replace />} />
+            <Route path="/complete-provider-profile" element={<Navigate to="/provider-setup" replace />} />
             <Route
               path="/admin"
               element={

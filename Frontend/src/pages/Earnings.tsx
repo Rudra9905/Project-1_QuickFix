@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader } from '../components/ui/Loader'
 import { bookingService } from '../services/bookingService'
+import { providerService } from '../services/providerService'
 import { format, parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns'
 import type { Booking } from '../types'
-import { 
-  TrendingUpIcon, 
-  CalendarIcon, 
+import {
+  TrendingUpIcon,
+  CalendarIcon,
   WalletIcon
 } from '../components/icons/CustomIcons'
+
 interface EarningsSummary {
   totalEarnings: number
   todayEarnings: number
@@ -19,10 +21,19 @@ interface EarningsSummary {
   avgEarningsPerJob: number
 }
 
+// Helper function to extract price from booking note
+const extractPriceFromNote = (note?: string): number | null => {
+  if (!note) return null
+  // Match patterns like "₹500" or "- ₹500/" in the note
+  const match = note.match(/₹(\d+)/)
+  return match ? parseInt(match[1], 10) : null
+}
+
 const Earnings = () => {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [basePrice, setBasePrice] = useState(0)
   const [earningsSummary, setEarningsSummary] = useState<EarningsSummary>({
     totalEarnings: 0,
     todayEarnings: 0,
@@ -42,9 +53,17 @@ const Earnings = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true)
-      const bookingsData = await bookingService.getBookingsByProvider(user!.id)
+      // Fetch bookings and provider profile in parallel
+      const [bookingsData, providersData] = await Promise.all([
+        bookingService.getBookingsByProvider(user!.id),
+        providerService.getAllProviders()
+      ])
+
+      const currentProvider = providersData.find(p => p.userId === user!.id)
+      const basePrice = currentProvider?.basePrice || 0
+
       setBookings(bookingsData)
-      calculateEarningsSummary(bookingsData)
+      calculateEarningsSummary(bookingsData, basePrice)
     } catch (error) {
       console.error('Failed to fetch earnings data:', error)
     } finally {
@@ -52,27 +71,33 @@ const Earnings = () => {
     }
   }
 
-  const calculateEarningsSummary = (bookingsData: Booking[]) => {
-    // Using a placeholder amount since the actual pricing isn't in the data model
-    const jobValue = 100 // Placeholder amount per completed job
-    
+  const calculateEarningsSummary = (bookingsData: Booking[], fallbackPrice: number) => {
     const completedBookings = bookingsData.filter(b => b.status === 'COMPLETED')
-    
-    const todayEarnings = completedBookings
-      .filter(b => b.completedAt && isToday(parseISO(b.completedAt)))
-      .length * jobValue
-    
-    const weeklyEarnings = completedBookings
-      .filter(b => b.completedAt && isThisWeek(parseISO(b.completedAt)))
-      .length * jobValue
-    
-    const monthlyEarnings = completedBookings
-      .filter(b => b.completedAt && isThisMonth(parseISO(b.completedAt)))
-      .length * jobValue
-    
-    const totalEarnings = completedBookings.length * jobValue
+
+    // Calculate earnings based on actual booking prices from notes
+    const calculateEarnings = (bookings: Booking[]) => {
+      return bookings.reduce((total, booking) => {
+        const price = extractPriceFromNote(booking.note) || fallbackPrice
+        return total + price
+      }, 0)
+    }
+
+    const todayEarnings = calculateEarnings(
+      completedBookings.filter(b => b.completedAt && isToday(parseISO(b.completedAt)))
+    )
+
+    const weeklyEarnings = calculateEarnings(
+      completedBookings.filter(b => b.completedAt && isThisWeek(parseISO(b.completedAt)))
+    )
+
+    const monthlyEarnings = calculateEarnings(
+      completedBookings.filter(b => b.completedAt && isThisMonth(parseISO(b.completedAt)))
+    )
+
+    const totalEarnings = calculateEarnings(completedBookings)
     const avgEarningsPerJob = completedBookings.length > 0 ? totalEarnings / completedBookings.length : 0
-    
+
+    setBasePrice(fallbackPrice)
     setEarningsSummary({
       totalEarnings,
       todayEarnings,
@@ -120,7 +145,7 @@ const Earnings = () => {
             <WalletIcon size={24} />
           </div>
         </div>
-        
+
         <div className="bg-card p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-accent-teal/30 transition-all">
           <div>
             <p className="text-sm font-medium text-text-muted mb-1">Today</p>
@@ -130,7 +155,7 @@ const Earnings = () => {
             <CalendarIcon size={24} />
           </div>
         </div>
-        
+
         <div className="bg-card p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-accent-orange/30 transition-all">
           <div>
             <p className="text-sm font-medium text-text-muted mb-1">This Week</p>
@@ -140,7 +165,7 @@ const Earnings = () => {
             <TrendingUpIcon size={24} />
           </div>
         </div>
-        
+
         <div className="bg-card p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-accent-navy/30 transition-all">
           <div>
             <p className="text-sm font-medium text-text-muted mb-1">This Month</p>
@@ -172,14 +197,14 @@ const Earnings = () => {
             <div>
               <p className="text-sm text-text-muted">Completion Rate</p>
               <p className="text-xl font-bold text-text-dark">
-                {earningsSummary.totalJobs > 0 
-                  ? Math.round((earningsSummary.completedJobs / earningsSummary.totalJobs) * 100) 
+                {earningsSummary.totalJobs > 0
+                  ? Math.round((earningsSummary.completedJobs / earningsSummary.totalJobs) * 100)
                   : 0}%
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-card p-6 rounded-3xl border border-slate-100 shadow-sm md:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -200,8 +225,8 @@ const Earnings = () => {
                 {earningsSummary.todayEarnings > earningsSummary.weeklyEarnings && earningsSummary.todayEarnings > earningsSummary.monthlyEarnings
                   ? "Today"
                   : earningsSummary.weeklyEarnings > earningsSummary.monthlyEarnings
-                  ? "This Week"
-                  : "This Month"}
+                    ? "This Week"
+                    : "This Month"}
               </p>
             </div>
           </div>
@@ -224,8 +249,8 @@ const Earnings = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-text-dark">₹100</p>
-                  <p className="text-sm text-success">+ ₹100 earned</p>
+                  <p className="font-semibold text-text-dark">₹{extractPriceFromNote(booking.note) || basePrice}</p>
+                  <p className="text-sm text-success">+ ₹{extractPriceFromNote(booking.note) || basePrice} earned</p>
                 </div>
               </div>
             ))}

@@ -74,7 +74,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       // Fetch notifications and unread count in parallel for better performance
       const [notificationsData, count] = await Promise.all([
         // Fetch notifications based on user role (PROVIDER vs USER)
-        user.role === 'PROVIDER' 
+        user.role === 'PROVIDER'
           ? notificationService.getProviderNotifications(user.id)
           : notificationService.getUserNotifications(user.id),
         // Fetch unread count for the user
@@ -103,7 +103,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     // Log notification receipt for debugging
     logInfo('=== NEW NOTIFICATION RECEIVED ===')
     logInfo('Notification:', notification)
-    
+
     // Prevent duplicate notifications by checking if notification ID already exists
     setNotifications((prev) => {
       const exists = prev.some(n => n.id === notification.id)
@@ -114,7 +114,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       // Add new notification to the beginning of the array (most recent first)
       return [notification, ...prev]
     })
-    
+
     // Only increment unread count if the notification is unread
     if (!notification.isRead) {
       setUnreadCount((prev) => prev + 1)
@@ -134,18 +134,18 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Polling fallback for WebSocket failures
+  // Polling fallback for WebSocket failures (much less frequent now)
   useEffect(() => {
     if (!user || !isNotificationsRoute()) return
 
     const pollInterval = setInterval(() => {
       // Check if WebSocket is connected, if not, refresh notifications
       const status = websocketService.getConnectionStatus()
-      if (!status.isConnected && Date.now() - lastFetchTime > 30000) { // 30 seconds
+      if (!status.isConnected && Date.now() - lastFetchTime > 60000) { // 60 seconds
         logWarn('WebSocket not connected, polling for notifications')
         loadNotifications()
       }
-    }, 10000) // Check every 10 seconds
+    }, 60000) // Check every 60 seconds (reduced from 10 seconds)
 
     return () => clearInterval(pollInterval)
   }, [user, lastFetchTime, location.pathname])
