@@ -26,4 +26,6 @@ public interface ProviderProfileRepository extends JpaRepository<ProviderProfile
     
     @Query("SELECT p FROM ProviderProfile p WHERE p.user.city = :city AND p.serviceType = :serviceType AND p.isAvailable = true")
     List<ProviderProfile> findByUserCityAndServiceTypeAndIsAvailableTrue(@Param("city") String city, @Param("serviceType") ServiceType serviceType);
+
+    Long countByIsApprovedTrue();
 }

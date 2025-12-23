@@ -1,7 +1,44 @@
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+
+interface Stats {
+  activeProviders: number;
+  jobsCompleted: number;
+  averageRating: number;
+  satisfactionRate: number;
+}
 
 export const LandingPage = () => {
   const navigate = useNavigate()
+  const [stats, setStats] = useState<Stats>({
+    activeProviders: 40, // default fallback
+    jobsCompleted: 15000,
+    averageRating: 4.8,
+    satisfactionRate: 98
+  });
+
+  useEffect(() => {
+    const fetchStats = async (lat?: number, lng?: number) => {
+      try {
+        let url = 'http://localhost:8080/api/stats';
+        if (lat && lng) {
+          url += `?lat=${lat}&lng=${lng}`;
+        }
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+
+    // Fetch stats without location initially to avoid browser violation
+    fetchStats();
+
+    // We can add a "Locate Me" button later if needed
+  }, []);
 
   const handleBookNow = () => {
     navigate('/login')
@@ -12,332 +49,304 @@ export const LandingPage = () => {
   }
 
   return (
-    <div className="relative flex flex-col min-h-screen w-full bg-surface font-display text-text-muted antialiased overflow-x-hidden">
-      {/* Sticky Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-card/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-[960px] items-center justify-between px-4 py-3 md:px-10">
-          <div className="flex items-center gap-4 text-text-dark">
-            <div className="size-8 text-primary">
+    <div className="relative flex flex-col min-h-screen w-full bg-slate-50 font-sans text-slate-600 antialiased overflow-x-hidden selection:bg-indigo-100 selection:text-indigo-700">
+      {/* Sticky Navbar with Dashboard Gradient */}
+      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6366F1] shadow-lg shadow-indigo-200/20">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3 md:px-8">
+          <div className="flex items-center gap-3">
+            <div className="size-9 text-white bg-white/20 rounded-xl p-1.5 backdrop-blur-sm border border-white/20 shadow-inner">
               <svg className="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_6_319)">
-                  <path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" fill="currentColor"></path>
-                </g>
-                <defs>
-                  <clipPath id="clip0_6_319"><rect fill="white" height="48" width="48"></rect></clipPath>
-                </defs>
+                <path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" fill="currentColor"></path>
               </svg>
             </div>
-            <h2 className="text-text-dark text-xl font-bold leading-tight tracking-[-0.015em]">QuickFix</h2>
+            <h2 className="text-white text-2xl font-bold tracking-tight">QuickFix</h2>
           </div>
-          <div className="hidden md:flex flex-1 justify-end gap-8">
-            <div className="flex items-center gap-6">
-              <a className="text-text-muted hover:text-primary transition-colors text-sm font-medium" href="#">Services</a>
-              <a className="text-text-muted hover:text-primary transition-colors text-sm font-medium" href="#how-it-works">How it works</a>
-              <a className="text-text-muted hover:text-primary transition-colors text-sm font-medium" href="#">Reviews</a>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={handleBookNow}
-                className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-primary text-white text-sm font-bold hover:bg-primary-light transition-colors shadow-sm">
-                <span className="truncate">Book Now</span>
-              </button>
-              <button 
+
+          <div className="hidden md:flex flex-1 justify-end items-center gap-8">
+            <nav className="flex items-center gap-6">
+              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#">Services</a>
+              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#how-it-works">How it works</a>
+              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#reviews">Reviews</a>
+            </nav>
+            <div className="flex gap-3">
+              <button
                 onClick={handleLogin}
-                className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-6 bg-surface text-text-dark border border-slate-200 text-sm font-bold hover:bg-slate-200 transition-colors">
-                <span className="truncate">Log In</span>
+                className="px-5 h-10 rounded-full text-white font-medium text-sm hover:bg-white/10 transition-all border border-transparent hover:border-white/20">
+                Log In
+              </button>
+              <button
+                onClick={handleBookNow}
+                className="px-6 h-10 rounded-full bg-white text-[#7C3AED] font-bold text-sm hover:bg-indigo-50 transition-all shadow-lg shadow-indigo-900/10 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
+                Book Now
               </button>
             </div>
           </div>
-          <div className="md:hidden text-text-dark">
-            <span className="material-symbols-outlined">menu</span>
+          <div className="md:hidden text-white cursor-pointer hover:bg-white/10 p-2 rounded-full transition-colors">
+            <span className="material-symbols-outlined block">menu</span>
           </div>
         </div>
       </header>
-      
-      {/* Main Content */}
-      <div className="flex-1 flex justify-center py-5 px-4 md:px-0">
-        <div className="flex flex-col max-w-[960px] flex-1 w-full gap-8">
-          <div className="@container">
-            <div className="flex flex-col gap-6 py-10 @[480px]:gap-8 @[864px]:flex-row-reverse">
-              <div className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-3xl @[480px]:h-auto @[480px]:min-w-[400px] @[864px]:w-1/2 relative overflow-hidden group shadow-lg" data-alt="Professional handyman fixing a wooden shelf with tools" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCoFkPBXqUA7tPsIF2GqAGrRuyZevVww--vCKlRoF6F6ZTvJZTU6jp-dJ-a5DKllt_jOYsPnYab3u_jnIk2S2f2p_kdOztVB53B6LybCzkVAhl3tL8dLPsIkcMw2pO_wPFzWCc0TyH_gRdEKGO82fOrc6cgmR1OpzAiYK2pnP9Ut7eO8Pkxlh9y_3l5l4YeuQHgqQfd-dHxpNXqTnHqRSO_o_xyS1jPuFyVv1Ee9sb4kIOaM9zI5OExAYoiQTqgz9Qlxmor_lUfiL4")'}}>
-                <div className="absolute inset-0 bg-gradient-to-t from-text-dark/80 to-transparent"></div>
-                <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur rounded-2xl p-3 flex items-center gap-3 shadow-md">
-                  <div className="size-10 rounded-full bg-primary flex items-center justify-center text-white">
-                    <span className="material-symbols-outlined">bolt</span>
-                  </div>
-                  <div>
-                    <p className="text-text-dark text-xs font-bold">Mike is 4 mins away</p>
-                    <p className="text-text-muted text-[10px]">Electrical Expert</p>
-                  </div>
+
+      <main className="flex-1 flex flex-col items-center w-full">
+        {/* Hero Section */}
+        <section className="w-full relative overflow-hidden bg-white pb-16 pt-12 md:pb-32 md:pt-20 lg:pb-40 lg:pt-28">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/50 via-slate-50 to-slate-50 pointer-events-none"></div>
+
+          <div className="relative z-10 mx-auto max-w-[1200px] px-4 md:px-8">
+            <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-center">
+              <div className="flex-1 flex flex-col gap-6 lg:gap-8 text-center lg:text-left max-w-2xl lg:max-w-none">
+                <div className="inline-flex w-fit items-center gap-2.5 rounded-full border border-indigo-100 bg-indigo-50/50 px-4 py-1.5 shadow-sm mx-auto lg:mx-0 backdrop-blur-sm">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                  </span>
+                  <span className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">Live: {stats.activeProviders} Pros available now</span>
                 </div>
-              </div>
-              <div className="flex flex-col gap-6 @[480px]:min-w-[400px] @[480px]:gap-8 @[864px]:justify-center @[864px]:w-1/2">
-                <div className="flex flex-col gap-4 text-left">
-                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-card px-3 py-1 shadow-sm">
-                    <span className="flex size-2 rounded-full bg-success animate-pulse"></span>
-                    <span className="text-xs font-medium text-text-dark">Live: 42 Pros available now</span>
-                  </div>
-                  <h1 className="text-text-dark text-5xl font-black leading-[0.95] tracking-[-0.033em] @[480px]:text-6xl">
-                    Expert Help<br/>
-                    <span className="text-primary" style={{fontSize: '3rem'}}>in 30 Mins.</span>
-                  </h1>
-                  <h2 className="text-text-muted text-lg font-normal leading-relaxed max-w-md">
-                    Plumbing, Electrical, Cleaning. Guaranteed arrival time or the service is free.
-                  </h2>
-                </div>
-                <label className="flex flex-col h-14 w-full max-w-[480px] @[480px]:h-16 relative group/search">
-                  <div className="flex w-full flex-1 items-stretch rounded-full h-full shadow-lg shadow-primary/10 transition-shadow group-focus-within/search:shadow-primary/20 bg-card">
-                    <div className="text-primary/70 flex border-none bg-card items-center justify-center pl-6 rounded-l-full">
+
+                <h1 className="text-slate-900 text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tight">
+                  Expert Help <br className="hidden lg:block" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#6366F1]" style={{ fontSize: '3rem' }}>in 30 Mins.</span>
+                </h1>
+
+                <p className="text-slate-500 text-lg md:text-xl leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
+                  Plumbing, Electrical, Cleaning. Guaranteed arrival time or the service is free. Experience the new standard in home services.
+                </p>
+
+                <div className="w-full max-w-lg mx-auto lg:mx-0">
+                  {/* <label className="relative flex items-center group">
+                    <div className="absolute left-4 text-indigo-500 transition-colors group-focus-within:text-indigo-600">
                       <span className="material-symbols-outlined text-2xl">location_on</span>
                     </div>
-                    <input className="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-dark focus:outline-0 focus:ring-0 border-none bg-card h-full placeholder:text-text-muted/50 px-4 text-base font-normal" placeholder="Enter zip code" value=""/>
-                    <div className="flex items-center justify-center rounded-r-full border-none bg-card pr-2">
-                      <button className="flex min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 @[480px]:h-12 bg-primary text-white text-base font-bold hover:bg-primary-light transition-all hover:scale-105 active:scale-95">
-                        <span className="truncate">Find Help</span>
-                      </button>
+                    <input
+                      className="w-full h-14 md:h-16 pl-12 pr-36 rounded-2xl border border-slate-200 bg-white shadow-xl shadow-indigo-100/40 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED] transition-all text-base md:text-lg"
+                      placeholder="Enter your zip code"
+                    />
+                    <button className="absolute right-2 h-10 md:h-12 px-6 md:px-8 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#6366F1] text-white font-bold text-sm md:text-base shadow-md hover:shadow-lg hover:brightness-110 transition-all active:scale-95">
+                      Find Help
+                    </button>
+                  </label> */}
+                  <div className="mt-4 flex items-center justify-center lg:justify-start gap-2 text-sm font-medium text-slate-400">
+                    <span className="material-symbols-outlined text-indigo-500 text-lg">verified_user</span>
+                    <span>Fully Licensed & Insured Professionals</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 w-full max-w-[600px] lg:max-w-none perspective-1000">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[#7C3AED] to-[#6366F1] rounded-[2.5rem] rotate-3 opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500"></div>
+                  <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 aspect-[4/3] bg-slate-900 border-4 border-white transform transition-transform duration-500 hover:scale-[1.01]">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-110"
+                      style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCoFkPBXqUA7tPsIF2GqAGrRuyZevVww--vCKlRoF6F6ZTvJZTU6jp-dJ-a5DKllt_jOYsPnYab3u_jnIk2S2f2p_kdOztVB53B6LybCzkVAhl3tL8dLPsIkcMw2pO_wPFzWCc0TyH_gRdEKGO82fOrc6cgmR1OpzAiYK2pnP9Ut7eO8Pkxlh9y_3l5l4YeuQHgqQfd-dHxpNXqTnHqRSO_o_xyS1jPuFyVv1Ee9sb4kIOaM9zI5OExAYoiQTqgz9Qlxmor_lUfiL4")' }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                    </div>
+
+                    <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50">
+                      <div className="relative">
+                        <div className="size-12 rounded-full bg-indigo-100 flex items-center justify-center text-[#7C3AED]">
+                          <span className="material-symbols-outlined">bolt</span>
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white rounded-full"></div>
+                      </div>
+                      <div>
+                        <p className="text-slate-900 font-bold text-sm">Mike is arriving</p>
+                        <p className="text-indigo-600 font-medium text-xs">4 mins away • Electrical Expert</p>
+                      </div>
+                      <div className="ml-auto flex flex-col items-end">
+                        <div className="flex text-yellow-500 text-xs">★★★★★</div>
+                        <span className="text-slate-400 text-[10px] font-medium">5.0 (124 jobs)</span>
+                      </div>
                     </div>
                   </div>
-                </label>
-                <div className="flex gap-4 items-center text-sm text-text-muted">
-                  <span className="material-symbols-outlined text-primary text-lg">verified_user</span>
-                  <p>Licensed &amp; Insured Professionals</p>
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Stats Section */}
-          <div className="flex flex-wrap gap-4 p-4">
-            <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-3xl p-6 bg-card border border-slate-100 shadow-sm hover:border-primary/20 transition-colors group">
-              <div className="size-10 rounded-full bg-surface flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors text-primary">
-                <span className="material-symbols-outlined">check_circle</span>
-              </div>
-              <p className="text-text-muted text-sm font-medium leading-normal">Jobs Completed</p>
-              <p className="text-text-dark tracking-tight text-3xl font-bold leading-tight">15,000+</p>
-            </div>
-            <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-3xl p-6 bg-card border border-slate-100 shadow-sm hover:border-primary/20 transition-colors group">
-              <div className="size-10 rounded-full bg-surface flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors text-primary">
-                <span className="material-symbols-outlined">timer</span>
-              </div>
-              <p className="text-text-muted text-sm font-medium leading-normal">Avg Arrival Time</p>
-              <p className="text-text-dark tracking-tight text-3xl font-bold leading-tight">22 min</p>
-            </div>
-            <div className="flex min-w-[158px] flex-1 flex-col gap-2 rounded-3xl p-6 bg-card border border-slate-100 shadow-sm hover:border-primary/20 transition-colors group">
-              <div className="size-10 rounded-full bg-surface flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-colors text-primary">
-                <span className="material-symbols-outlined">sentiment_satisfied</span>
-              </div>
-              <p className="text-text-muted text-sm font-medium leading-normal">Happiness Guarantee</p>
-              <p className="text-text-dark tracking-tight text-3xl font-bold leading-tight">100%</p>
-            </div>
-          </div>
-          
-          {/* Instant Services */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between px-4 pt-8 pb-2">
-              <h2 className="text-text-dark text-2xl font-bold leading-tight tracking-[-0.015em]">Instant Services</h2>
-              <a className="text-primary text-sm font-bold flex items-center gap-1 hover:underline" href="#">
-                View all <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </a>
-            </div>
-            <div className="flex gap-3 px-4 flex-wrap">
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">water_drop</span>
-                <p className="text-text-dark text-base font-medium">Plumbing</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">bolt</span>
-                <p className="text-text-dark text-base font-medium">Electrical</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">cleaning_services</span>
-                <p className="text-text-dark text-base font-medium">Quick Clean</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">build</span>
-                <p className="text-text-dark text-base font-medium">Assembly</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">lock</span>
-                <p className="text-text-dark text-base font-medium">Locksmith</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">local_shipping</span>
-                <p className="text-text-dark text-base font-medium">Moving Help</p>
-              </button>
-              <button className="group flex h-12 items-center justify-center gap-x-3 rounded-full bg-card hover:bg-surface border border-slate-100 hover:border-primary/50 shadow-sm transition-all pl-4 pr-6">
-                <span className="material-symbols-outlined text-primary">home_repair_service</span>
-                <p className="text-text-dark text-base font-medium">Handyman</p>
-              </button>
-            </div>
-          </div>
-          
-          {/* How it works */}
-          <section id="how-it-works" className="space-y-6">
-            <h2 className="text-xl font-semibold text-text-primary">How it works</h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-2xl shadow-soft border border-border px-6 py-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary">
-                    1
-                  </div>
-                  <h3 className="font-semibold text-text-primary">Request</h3>
-                </div>
-                <p className="text-sm text-text-secondary">
-                  Choose your service and tell us what&apos;s wrong. Get an instant quote with no hidden fees.
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-soft border border-border px-6 py-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary">
-                    2
-                  </div>
-                  <h3 className="font-semibold text-text-primary">Match</h3>
-                </div>
-                <p className="text-sm text-text-secondary">
-                  Our algorithm finds the nearest top-rated pro in seconds and shares live ETA updates.
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-soft border border-border px-6 py-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-xs font-semibold text-primary">
-                    3
-                  </div>
-                  <h3 className="font-semibold text-text-primary">Relax</h3>
-                </div>
-                <p className="text-sm text-text-secondary">
-                  Your pro arrives within 30 minutes to fix the issue. Pay securely only after you&apos;re satisfied.
-                </p>
-              </div>
-            </div>
-          </section>
-          
-          {/* Provider availability */}
-          <section className="relative overflow-hidden rounded-3xl shadow-large">
-            <div
-              className="relative bg-cover bg-center"
-              style={{
-                backgroundImage: 'url(/city-blur.png)',
-              }}
-            >
-              <div className="bg-gradient-to-r from-primary-900/80 via-primary-700/70 to-primary-500/60">
-                <div className="px-8 py-10 lg:px-12 lg:py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div>
-                    <p className="text-sm font-medium text-primary-100 mb-1">Live in your neighborhood</p>
-                    <h2 className="text-2xl lg:text-3xl font-semibold text-white mb-2">
-                      345 Pros in your area
-                    </h2>
-                    <p className="text-sm text-primary-100 max-w-md">
-                      We&apos;ve expanded our network. Average response time in your neighborhood is currently{' '}
-                      <span className="font-semibold text-white">14 minutes</span>.
-                    </p>
-                  </div>
-                  <button className="px-6 h-11 rounded-full bg-white text-primary text-sm font-medium shadow-soft hover:bg-primary-50 transition-colors">
-                    View Map
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-          
-          {/* Testimonials */}
-          <section id="reviews" className="space-y-6">
-            <h2 className="text-xl font-semibold text-text-primary">What neighbors are saying</h2>
-            <div className="grid md:grid-cols-4 gap-6">
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-16 lg:mt-24">
               {[
-                {
-                  name: 'James D.',
-                  city: 'Brooklyn, NY',
-                  quote:
-                    'My sink burst at 10 PM. QuickHelper had a plumber at my door in 18 minutes. Lifesaver.',
-                },
-                {
-                  name: 'Sarah L.',
-                  city: 'Austin, TX',
-                  quote:
-                    'The tracking feature is amazing. I knew exactly when the electrician would arrive. No more 4-hour windows.',
-                },
-                {
-                  name: 'Emily R.',
-                  city: 'San Francisco, CA',
-                  quote:
-                    'The pro was polite, on-time and left everything spotless. Easily the best home service experience I\'ve had.',
-                },
-                {
-                  name: 'Marcus T.',
-                  city: 'Seattle, WA',
-                  quote:
-                    'Booked a quick clean before my in-laws arrived. The team was efficient and thorough. Highly recommend.',
-                },
-              ].map((t, index) => (
-                <div key={index} className="bg-white rounded-2xl shadow-soft border border-border px-5 py-6 flex flex-col gap-4">
-                  <div className="flex items-center gap-1 text-primary text-xs">
+                { icon: 'check_circle', label: 'Jobs Completed', value: stats.jobsCompleted.toLocaleString() + '+' },
+                { icon: 'timer', label: 'Avg Arrival', value: '22 min' },
+                { icon: 'sentiment_satisfied', label: 'Satisfaction', value: stats.satisfactionRate + '%' },
+              ].map((stat, i) => (
+                <div key={i} className="flex flex-col items-center justify-center p-6 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all hover:-translate-y-1">
+                  <div className="mb-3 p-3 rounded-2xl bg-indigo-50 text-[#7C3AED]">
+                    <span className="material-symbols-outlined text-2xl">{stat.icon}</span>
+                  </div>
+                  <span className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</span>
+                  <span className="text-sm font-medium text-slate-500 mt-1">{stat.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Instant Services */}
+        <section className="w-full py-20 bg-slate-50 relative">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+              <div>
+                <span className="text-[#7C3AED] font-bold tracking-wider uppercase text-sm" style={{ fontSize: '3rem' }}>Services</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mt-2" style={{ fontSize: '2rem' }}>Whatever breaks, we fix.</h2>
+              </div>
+              {/* <a href="#" className="flex items-center gap-2 text-[#7C3AED] font-bold hover:text-[#6366F1] transition-colors group">
+                View all services
+                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </a> */}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {[
+                { icon: 'water_drop', name: 'Plumbing' },
+                { icon: 'bolt', name: 'Electrical' },
+                { icon: 'cleaning_services', name: 'Cleaning' },
+                { icon: 'build', name: 'Assembly' },
+                { icon: 'lock', name: 'Locksmith' },
+                { icon: 'home_repair_service', name: 'Handyman' },
+              ].map((service, i) => (
+                <button key={i} className="flex flex-col items-center justify-center gap-4 p-6 rounded-3xl bg-white border border-slate-150 shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 hover:border-indigo-200 transition-all hover:-translate-y-1 group">
+                  <div className="size-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 group-hover:bg-[#7C3AED] group-hover:text-white transition-colors duration-300">
+                    <span className="material-symbols-outlined text-3xl">{service.icon}</span>
+                  </div>
+                  <span className="font-bold text-slate-700 group-hover:text-slate-900">{service.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section id="how-it-works" className="w-full py-24 bg-white">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">How QuickFix Works</h2>
+              <p className="text-slate-500 text-lg">Three simple steps to get your home back to normal. No stress, no waiting.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 relative">
+              {/* Connecting Line (Desktop) */}
+              <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-slate-200 via-indigo-200 to-slate-200"></div>
+
+              {[
+                { step: 1, title: 'Request', desc: 'Choose your service and tell us what\'s wrong. Get an instant quote.' },
+                { step: 2, title: 'Match', desc: 'Our algorithm finds the nearest top-rated pro in seconds.' },
+                { step: 3, title: 'Relax', desc: 'Your pro arrives within 30 minutes. Pay only after you\'re satisfied.' }
+              ].map((item, i) => (
+                <div key={i} className="relative flex flex-col items-center text-center gap-4 group">
+                  <div className="relative z-10 size-24 rounded-3xl bg-white border-4 border-slate-50 shadow-xl shadow-indigo-100/50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-4xl font-black text-[#7C3AED]">{item.step}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mt-2">{item.title}</h3>
+                  <p className="text-slate-500 leading-relaxed max-w-[280px]">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action / Map Teaser */}
+        <section className="w-full py-16 px-4 md:px-8">
+          <div className="max-w-[1200px] mx-auto relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 group">
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
+              style={{ backgroundImage: 'url(/city-blur.png)' }}
+            ></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#7C3AED]/95 to-[#6366F1]/90"></div>
+
+            <div className="relative px-8 py-12 md:px-16 md:py-20 flex flex-col md:flex-row items-center justify-between gap-10">
+              <div className="text-center md:text-left">
+                <span className="inline-block py-1 px-3 rounded-lg bg-white/20 text-white text-xs font-bold uppercase tracking-wider mb-4 border border-white/20">Live in your neighborhood</span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">{stats.activeProviders} Pros in your area</h2>
+                <p className="text-indigo-100 text-lg max-w-xl">
+                  We've expanded our network. Average response time in your neighborhood is currently <span className="font-bold text-white underline decoration-white/30 decoration-2 underline-offset-4">14 minutes</span>.
+                </p>
+              </div>
+              {/* <button className="shrink-0 h-14 px-8 rounded-full bg-white text-[#7C3AED] font-bold text-lg hover:bg-slate-50 transition-colors shadow-lg shadow-black/10 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
+                View Live Map
+              </button> */}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section id="reviews" className="w-full py-20 bg-slate-50">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-8">
+            <h2 className="text-3xl font-bold text-slate-900 mb-10 text-center">What neighbors are saying</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { name: 'James D.', loc: 'Brooklyn, NY', txt: 'My sink burst at 10 PM. QuickHelper had a plumber at my door in 18 minutes. Lifesaver.' },
+                { name: 'Sarah L.', loc: 'Austin, TX', txt: 'The tracking feature is amazing. I knew exactly when the electrician would arrive. No more 4-hour windows.' },
+                { name: 'Emily R.', loc: 'San Francisco, CA', txt: 'The pro was polite, on-time and left everything spotless. Easily the best home service experience I\'ve had.' },
+                { name: 'Marcus T.', loc: 'Seattle, WA', txt: 'Booked a quick clean before my in-laws arrived. The team was efficient and thorough. Highly recommend.' }
+              ].map((t, i) => (
+                <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-4 hover:border-indigo-200 transition-colors">
+                  <div className="flex text-yellow-400 text-sm gap-0.5">
                     {'★★★★★'}
                   </div>
-                  <p className="text-sm text-text-secondary">&quot;{t.quote}&quot;</p>
-                  <div className="flex items-center gap-3 mt-auto">
-                    <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-semibold text-primary">
-                      {t.name.charAt(0)}
+                  <p className="text-slate-600 italic font-medium leading-relaxed">"{t.txt}"</p>
+                  <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-50">
+                    <div className="size-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 text-[#7C3AED] flex items-center justify-center font-bold text-sm">
+                      {t.name[0]}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-text-primary">{t.name}</p>
-                      <p className="text-xs text-text-muted">{t.city}</p>
+                      <p className="font-bold text-slate-900 text-sm">{t.name}</p>
+                      <p className="text-xs text-slate-400">{t.loc}</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </section>
-        </div>
-      </div>
-      
+          </div>
+        </section>
+      </main>
+
       {/* Footer */}
-      <footer className="bg-[#050316] text-white mt-10">
-        <div className="max-w-6xl mx-auto px-4 lg:px-0 py-10 space-y-8">
-          <div className="flex flex-col md:flex-row justify-between gap-8">
-            <div className="space-y-3 max-w-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-2xl bg-primary text-white flex items-center justify-center shadow-soft">
-                  <span className="text-xl font-semibold">Q</span>
-                </div>
-                <span className="font-semibold tracking-tight text-lg">QuickFix</span>
+      <footer className="bg-slate-900 text-slate-300 pt-20 pb-10">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 text-white">
+                <div className="size-10 bg-[#7C3AED] rounded-xl flex items-center justify-center text-xl font-bold">Q</div>
+                <span className="text-xl font-bold">QuickFix</span>
               </div>
-              <p className="text-sm text-primary-100">
-                The fastest way to get household problems fixed. 30 minutes or it&apos;s free. Guaranteed.
+              <p className="text-sm leading-relaxed text-slate-400">
+                The fastest way to get household problems fixed. 30 minutes or it's free. Guaranteed.
               </p>
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
-              <div className="space-y-3">
-                <p className="font-semibold text-white/80">Company</p>
-                <ul className="space-y-2 text-white/60">
-                  <li>About</li>
-                  <li>Careers</li>
-                  <li>Blog</li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <p className="font-semibold text-white/80">Services</p>
-                <ul className="space-y-2 text-white/60">
-                  <li>Plumbing</li>
-                  <li>Electrical</li>
-                  <li>Cleaning</li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <p className="font-semibold text-white/80">Support</p>
-                <ul className="space-y-2 text-white/60">
-                  <li>Help Center</li>
-                  <li>Terms of Service</li>
-                  <li>Privacy Policy</li>
-                </ul>
-              </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">Company</h4>
+              <ul className="space-y-4 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">Services</h4>
+              <ul className="space-y-4 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Plumbing</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Electrical</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Cleaning</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">Support</h4>
+              <ul className="space-y-4 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+              </ul>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs text-white/50">
-            <p>© {new Date().getFullYear()} QuickHelper Inc. All rights reserved.</p>
-            <div className="flex items-center gap-3">
-              <span>Made for modern cities.</span>
-            </div>
+
+          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-500">
+            <p>&copy; {new Date().getFullYear()} QuickFix Inc. All rights reserved.</p>
+            <p>Made for modern living.</p>
           </div>
         </div>
       </footer>

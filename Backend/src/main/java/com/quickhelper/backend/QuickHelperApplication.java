@@ -13,4 +13,4 @@ public class QuickHelperApplication {
     public static void main(String[] args) {
         SpringApplication.run(QuickHelperApplication.class, args);
     }
-}
+} 

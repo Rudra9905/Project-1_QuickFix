@@ -14,4 +14,7 @@ import java.util.Optional;
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Review> findByBooking(Booking booking);
     List<Review> findByBooking_Provider(User provider);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT AVG(r.rating) FROM Review r")
+    Double getAverageRating();
 }
