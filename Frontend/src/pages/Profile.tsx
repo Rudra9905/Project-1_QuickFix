@@ -792,6 +792,145 @@ const ProviderProfileView = () => {
   )
 }
 
+const UserProfileView = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
+  const menuItems = [
+    {
+      icon: MapPinIcon,
+      label: 'Addresses',
+      description: 'Manage delivery addresses',
+      path: '/addresses',
+      color: '#5B21B6'
+    },
+    {
+      icon: WalletIcon,
+      label: 'Payments',
+      description: 'Saved cards & history',
+      path: '/payments',
+      color: '#EC4899'
+    },
+    {
+      icon: TagIcon,
+      label: 'Coupons',
+      description: 'Discounts & offers',
+      path: '/coupons',
+      color: '#F59E0B'
+    },
+    {
+      icon: HeadphonesIcon,
+      label: 'Support',
+      description: 'Get help & FAQs',
+      path: '/support',
+      color: '#10B981'
+    },
+  ]
+
+  return (
+    <div className="max-w-4xl mx-auto pb-24 space-y-8">
+      {/* Hero Section / Profile Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-large p-8 md:p-12">
+        {/* Decorative background circles */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white opacity-10 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-white opacity-10 blur-2xl"></div>
+
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+          <div className="relative">
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full p-1 bg-white/20 backdrop-blur-sm shadow-xl">
+              <Avatar name={user.name} className="h-full w-full border-4 border-white text-3xl font-bold" />
+            </div>
+            {/* Online/Status Indicator could go here */}
+          </div>
+
+          <div className="text-center md:text-left flex-1 space-y-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+              {user.name}
+            </h1>
+            <div className="flex flex-col md:flex-row items-center gap-4 text-white/90 font-medium">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
+                <span className="material-symbols-outlined text-[18px]">mail</span>
+                {user.email}
+              </div>
+              {(user as any).phone && (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
+                  <PhoneIcon size={16} color="currentColor" />
+                  {(user as any).phone}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 md:mt-0">
+            <Button
+              variant="secondary"
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all font-semibold shadow-lg"
+              onClick={() => console.log('Edit Profile')}
+            >
+              <span className="material-symbols-outlined text-xl mr-2">edit</span>
+              Edit Profile
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Grid */}
+      <div>
+        <h2 className="text-xl font-bold text-text-primary mb-6 flex items-center gap-2">
+          <span className="w-1 h-6 bg-primary rounded-full"></span>
+          Account Settings
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {menuItems.map((item, index) => {
+            const Icon = item.icon
+            return (
+              <Card
+                key={index}
+                className="group cursor-pointer border-transparent hover:border-primary/10 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 overflow-hidden relative"
+                onClick={() => {
+                  console.log(`Navigate to ${item.path}`)
+                }}
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <ArrowRightIcon size={20} color={item.color} />
+                </div>
+
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-5">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: `${item.color}15` }}
+                    >
+                      <Icon size={28} color={item.color} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-text-primary group-hover:text-primary transition-colors">
+                        {item.label}
+                      </h3>
+                      <p className="text-sm text-text-secondary mt-1 group-hover:text-text-primary/80 transition-colors">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Logout Section */}
+      <div className="flex justify-center pt-8">
+        <Button
+          variant="outline"
+          className="text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200 w-full md:w-auto px-8 py-6 rounded-xl hover:shadow-md transition-all"
+          onClick={onLogout}
+        >
+          <LogOutIcon size={22} color="currentColor" className="mr-2" />
+          <span className="font-semibold text-lg">Sign Out</span>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export const Profile = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -809,74 +948,5 @@ export const Profile = () => {
     return <ProviderProfileView />
   }
 
-  const menuItems = [
-    { icon: MapPinIcon, label: 'Addresses', path: '/addresses', color: '#5B21B6' },
-    { icon: WalletIcon, label: 'Payments', path: '/payments', color: '#5B21B6' },
-    { icon: TagIcon, label: 'Coupons', path: '/coupons', color: '#5B21B6' },
-    { icon: HeadphonesIcon, label: 'Support', path: '/support', color: '#5B21B6' },
-  ]
-
-  return (
-    <div className="max-w-md mx-auto lg:max-w-full pb-24">
-      {/* Profile Summary Card */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Avatar name={user.name} size="lg" />
-            <div className="flex-1">
-              <h2 className="text-section-header font-heading text-text-primary mb-1">
-                {user.name}
-              </h2>
-              <p className="text-body text-text-secondary">{user.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <PhoneIcon size={16} color="#6B7280" />
-            <span className="text-body text-text-secondary">{(user as any).phone || 'Not provided'}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* List Menu */}
-      <div className="space-y-2">
-        {menuItems.map((item, index) => {
-          const Icon = item.icon
-          return (
-            <Card
-              key={index}
-              className="cursor-pointer transition-all hover:shadow-medium"
-              onClick={() => {
-                // Navigate to respective pages when implemented
-                console.log(`Navigate to ${item.path}`)
-              }}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-                    <Icon size={20} color={item.color} />
-                  </div>
-                  <span className="text-body font-label text-text-primary flex-1">
-                    {item.label}
-                  </span>
-                  <ArrowRightIcon size={20} color="#9CA3AF" />
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Logout Button */}
-      <div className="mt-6">
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={handleLogout}
-        >
-          <LogOutIcon size={18} color="#DC2626" className="mr-2" />
-          Logout
-        </Button>
-      </div>
-    </div>
-  )
+  return <UserProfileView user={user} onLogout={handleLogout} />
 }

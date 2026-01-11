@@ -3,19 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Loader } from '../components/ui/Loader'
 import { bookingService } from '../services/bookingService'
-import type { Booking, ServiceType } from '../types'
-import { formatDistanceToNow } from 'date-fns'
-import { TrackingModal } from '../components/TrackingModal'
-import { useNotifications } from '../contexts/NotificationContext'
+import type { Booking } from '../types'
+import { isToday } from 'date-fns'
 import { ProviderDashboard } from './ProviderDashboard'
 
-const POPULAR_SERVICES: { value: ServiceType; label: string; icon: string; color: string }[] = [
-  { value: 'CLEANER', label: 'Cleaning', icon: 'cleaning_services', color: 'blue' },
-  { value: 'PLUMBER', label: 'Plumbing', icon: 'water_drop', color: 'orange' },
-  { value: 'ELECTRICIAN', label: 'Electrical', icon: 'bolt', color: 'yellow' },
-  { value: 'LAUNDRY', label: 'Laundry', icon: 'local_laundry_service', color: 'teal' },
-  { value: 'OTHER', label: 'Other', icon: 'more_horiz', color: 'cyan' },
-]
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -29,12 +20,9 @@ type TrackingStatus = 'on_the_way' | 'reached' | 'arrived'
 export const Dashboard = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { notifications } = useNotifications()
   const [isLoading, setIsLoading] = useState(true)
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null)
-  const [recentBookings, setRecentBookings] = useState<Booking[]>([])
-  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false)
-  const [trackingStatus, setTrackingStatus] = useState<TrackingStatus>('on_the_way')
+  const [trackingStatus] = useState<TrackingStatus>('on_the_way')
 
   // Redirect admins to the admin dashboard
   useEffect(() => {
@@ -50,21 +38,14 @@ export const Dashboard = () => {
       try {
         if (user.role === 'USER') {
           const bookings = await bookingService.getBookingsByUser(user.id)
-          // Find active booking (ACCEPTED status)
-          const active = bookings.find(b => b.status === 'ACCEPTED')
-          setActiveBooking(active || null)
 
-          // Get recent bookings (last 30 days, completed or accepted)
-          const thirtyDaysAgo = new Date()
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-          const recent = bookings
-            .filter(b => {
-              const bookingDate = new Date(b.createdAt)
-              return bookingDate >= thirtyDaysAgo && (b.status === 'COMPLETED' || b.status === 'ACCEPTED')
-            })
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 5)
-          setRecentBookings(recent)
+          // Find active booking (ACCEPTED or IN_PROGRESS status)
+          // Prioritize IN_PROGRESS, then check for ACCEPTED bookings that are for TODAY
+          const active = bookings.find(b =>
+            b.status === 'IN_PROGRESS' ||
+            (b.status === 'ACCEPTED' && isToday(new Date(b.bookingDate || b.createdAt)))
+          )
+          setActiveBooking(active || null)
         }
       } catch (error) {
         console.error('Failed to fetch data:', error)
@@ -160,36 +141,7 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Services Section */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-text-dark">Services</h2>
-          <a
-            className="text-sm font-medium text-primary hover:text-primary-light transition-colors"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/providers')
-            }}
-          >
-            View All
-          </a>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {POPULAR_SERVICES.map((service, index) => (
-            <div
-              key={index}
-              className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-card p-8 border border-slate-100 hover:border-primary/20 hover:shadow-sm transition-all cursor-pointer group"
-              onClick={() => navigate('/select-provider', { state: { serviceType: service.value } })}
-            >
-              <div className={`size-12 rounded-xl flex items-center justify-center mb-1 group-hover:bg-${service.color}-100 transition-colors bg-${service.color}-50 text-${service.color}-600`}>
-                <span className="material-symbols-outlined">{service.icon}</span>
-              </div>
-              <h3 className="font-medium text-text-dark">{service.label}</h3>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* Active Service */}
       {activeBooking && (
@@ -210,7 +162,7 @@ export const Dashboard = () => {
             </div>
             <button
               className="mt-6 rounded-lg bg-white py-2 px-4 text-sm font-medium text-primary hover:bg-primary-light transition-colors"
-              onClick={() => setIsTrackingModalOpen(true)}
+              onClick={() => navigate(`/track-service/${activeBooking.id}`)}
             >
               Track Service
             </button>
@@ -221,14 +173,7 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* Tracking Modal */}
-      {activeBooking && (
-        <TrackingModal
-          isOpen={isTrackingModalOpen}
-          onClose={() => setIsTrackingModalOpen(false)}
-          booking={activeBooking}
-        />
-      )}
+
     </div>
   )
 }

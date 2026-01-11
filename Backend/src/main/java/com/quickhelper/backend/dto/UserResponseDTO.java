@@ -15,6 +15,7 @@ public class UserResponseDTO {
     private String email;
     private UserRole role;
     private String city;
+    private String phone;
     
     public UserResponseDTO(Long id, String name, String email, UserRole role) {
         this.id = id;
@@ -22,4 +23,6 @@ public class UserResponseDTO {
         this.email = email;
         this.role = role;
     }
+
+
 }

@@ -77,7 +77,7 @@ public class ProviderController {
             String url = fileStorageService.storeFile(
                     file,
                     Set.of("video/mp4", "video/quicktime"),
-                    20 * 1024 * 1024, // 20MB
+                    50 * 1024 * 1024, // 50MB
                     "videos");
             ProviderResponseDTO profile = providerService.updateDemoVideo(id, url);
             System.out.println("Demo video uploaded successfully for provider ID: " + id);

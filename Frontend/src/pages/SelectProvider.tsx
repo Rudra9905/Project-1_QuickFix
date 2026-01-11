@@ -9,6 +9,7 @@ import { PrebookModal } from '../components/PrebookModal'
 import { providerService } from '../services/providerService'
 import { bookingService } from '../services/bookingService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLocation as useLocationContext } from '../contexts/LocationContext'
 import toast from 'react-hot-toast'
 import type { ProviderProfile, ServiceType } from '../types'
 import { ArrowLeftIcon, MapPinIcon, StarIcon, CheckCircleIcon, ClockIcon, ImageIcon } from '../components/icons/CustomIcons'
@@ -31,6 +32,7 @@ export const SelectProvider = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { addressLocation } = useLocationContext()
 
   // State for Booking Flow
   const bookingType = location.state?.bookingType as 'single' | 'weekly' | 'multiple' | undefined
@@ -78,10 +80,17 @@ export const SelectProvider = () => {
   }, []);
 
   useEffect(() => {
-    if (isLocationChecked) {    
+    if (isLocationChecked) {
       fetchProviders()
     }
   }, [isLocationChecked, userLocation, user?.city])
+
+  // Re-fetch providers when user city or address location changes (e.g., when address is updated via EditLocationModal)
+  useEffect(() => {
+    if ((user?.city || addressLocation) && isLocationChecked) {
+      fetchProviders()
+    }
+  }, [user?.city, addressLocation])
 
   useEffect(() => {
     filterProviders()
@@ -93,15 +102,17 @@ export const SelectProvider = () => {
       let data: ProviderProfile[];
 
       const targetServiceType = selectedServiceType || serviceType;
+      // Use address location if available (from address change), otherwise use geolocation
+      const locationToUse = addressLocation || userLocation;
 
       if (targetServiceType) {
         // Fetch specific service type
-        if (userLocation) {
+        if (locationToUse) {
           data = await providerService.getAvailableProviders(
             targetServiceType,
             undefined,
-            userLocation.lat,
-            userLocation.lng,
+            locationToUse.lat,
+            locationToUse.lng,
             30
           );
         } else {
@@ -113,11 +124,11 @@ export const SelectProvider = () => {
         }
       } else {
         // Fetch ALL services (no type filter)
-        if (userLocation) {
+        if (locationToUse) {
           data = await providerService.getAllProviders(
             undefined,
-            userLocation.lat,
-            userLocation.lng,
+            locationToUse.lat,
+            locationToUse.lng,
             30
           );
         } else {
@@ -194,6 +205,7 @@ export const SelectProvider = () => {
               note: data.note,
               bookingDate: bookingDate.toISOString().split('T')[0],
               preferredTime: data.time,
+              multipleBooking: true,
             })
             successCount++
           } catch (error) {
@@ -248,6 +260,7 @@ export const SelectProvider = () => {
               note: 'Multiple Booking Package',
               bookingDate: day.toISOString().split('T')[0],
               preferredTime: '09:00', // Default time for batch
+              multipleBooking: true,
             })
             successCount++
           } catch (err) {

@@ -22,4 +22,9 @@ public class BookingResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime acceptedAt;
     private LocalDateTime completedAt;
+    private String bookingDate;
+    private String preferredTime;
+    private String startJobOtp;
+    private String arrivedAt;
+    private String startedAt;
 }

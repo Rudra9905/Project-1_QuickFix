@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Loader } from '../components/ui/Loader'
 import { Button } from '../components/ui/Button'
-import { TrackingModal } from '../components/TrackingModal'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import toast from 'react-hot-toast'
@@ -66,13 +64,22 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [providerProfile, setProviderProfile] = useState<ProviderProfile | null>(null)
   const [activeJobTab, setActiveJobTab] = useState<JobTab>('nearby')
-  const [nowTick, setNowTick] = useState(Date.now())
-  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false)
+  /* Persist dismissed alerts */
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem('dismissedAlertIds')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  const [selectedGroup, setSelectedGroup] = useState<BookingGroup | null>(null)
+
+
 
   useEffect(() => {
     fetchData(true)
-    const interval = setInterval(() => setNowTick(Date.now()), 1000)
-    return () => clearInterval(interval)
   }, [user.id])
 
   const fetchData = async (showLoader = false) => {
@@ -109,6 +116,9 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     }
   }
 
+
+
+
   // Batch Accept
   const handleBatchAccept = async (bookingIds: number[]) => {
     // Optimistic update all
@@ -118,6 +128,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
       // In a real optimized backend, we'd have a batch-accept endpoint
       await Promise.all(bookingIds.map(id => bookingService.acceptBooking(id)))
       toast.success(`Accepted package of ${bookingIds.length} bookings!`)
+      fetchData()
       fetchData()
     } catch (error: any) {
       toast.error('Failed to accept some bookings in the package')
@@ -137,18 +148,31 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     }
   }
 
-  // Batch Reject
+
   const handleBatchReject = async (bookingIds: number[]) => {
     bookingIds.forEach(id => optimisticUpdateStatus(id, 'REJECTED'))
     try {
       await Promise.all(bookingIds.map(id => bookingService.rejectBooking(id)))
       toast.success('Package declined')
       fetchData()
+      fetchData()
     } catch (error: any) {
       toast.error('Failed to decline some bookings')
       fetchData()
     }
   }
+
+
+  const handleGroupClick = (group: BookingGroup) => {
+    setSelectedGroup(group)
+  }
+
+  const handleJobClick = (booking: Booking) => {
+    navigate(`/provider/job/${booking.id}/track`)
+  }
+
+
+
 
   const handleComplete = async (bookingId: number) => {
     optimisticUpdateStatus(bookingId, 'COMPLETED')
@@ -196,7 +220,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   // Calculate stats
   // Note: For stats, we count individual bookings
   const newRequests = bookings.filter(b => b.status === 'REQUESTED').length
-  const acceptedJobs = bookings.filter(b => b.status === 'ACCEPTED').length
+  const acceptedJobs = bookings.filter(b => b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS').length
   const todayCompleted = bookings.filter(b => {
     if (b.status !== 'COMPLETED' || !b.completedAt) return false
     return isToday(parseISO(b.completedAt))
@@ -297,7 +321,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   const availableGroups = useMemo(() => groupBookings(availableJobs, true), [availableJobs, activeJobTab, providerProfile])
 
   // Filter accepted jobs that are NOT completed
-  const acceptedJobsList = bookings.filter(b => b.status === 'ACCEPTED')
+  const acceptedJobsList = bookings.filter(b => b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS')
   const upcomingGroups = useMemo(() => groupBookings(acceptedJobsList, false), [acceptedJobsList])
 
   // Get service icon and color
@@ -311,29 +335,19 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   }
 
   // Get in-progress job (ACCEPTED status)
-  const inProgressJob = bookings.find(b => b.status === 'ACCEPTED')
+  const inProgressJob = bookings.find(b => b.status === 'IN_PROGRESS')
 
   // Calculate time elapsed for in-progress job
   const getTimeElapsed = (booking: Booking) => {
     if (!booking.acceptedAt) return '0m'
-    const elapsed = nowTick - new Date(booking.acceptedAt).getTime()
+    const elapsed = Date.now() - new Date(booking.acceptedAt).getTime()
     const minutes = Math.floor(elapsed / (1000 * 60))
     if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
     return `${hours}h ${minutes % 60}m`
   }
 
-  // Calculate remaining time for request
-  const getRemainingTime = (createdAt: string) => {
-    const expiresAt = new Date(createdAt).getTime() + 2 * 60 * 1000 // 2 minutes
-    const diff = expiresAt - nowTick
 
-    if (diff <= 0) return null
-
-    const minutes = Math.floor(diff / 60000)
-    const seconds = Math.floor((diff % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
 
   // Render Helper for Job/Group Card
   const renderJobCard = (item: Booking | BookingGroup, isAccepted: boolean) => {
@@ -355,10 +369,17 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     return (
       <div
         key={isGroup ? group!.id : booking.id}
-        className="bg-card rounded-3xl p-6 border shadow-sm hover:shadow-md transition-all relative overflow-hidden mb-4"
+        className="bg-card rounded-3xl p-6 border shadow-sm hover:shadow-md transition-all relative overflow-hidden mb-4 cursor-pointer"
         style={{
           borderColor: isGroup ? `${borderColor}50` : borderColor,
           backgroundColor: bgColor
+        }}
+        onClick={() => {
+          if (isGroup) {
+            handleGroupClick(group!)
+          } else {
+            handleJobClick(booking)
+          }
         }}
       >
         {/* Group Indicator Strip */}
@@ -403,6 +424,22 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
                 {distance != null ? `${distance} km away` : booking.user.city ? `In ${booking.user.city}` : 'Location pending'} • {booking.user.city || 'Address pending'}
               </p>
 
+              {/* Customer Contact - Only visible if Accepted or In Progress */}
+              {(booking.status === 'ACCEPTED' || booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED') && (
+                <div className="mb-3 p-3 bg-gray-50 rounded-xl border border-gray-100/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-base text-gray-500">person</span>
+                    <span className="text-sm font-semibold text-gray-700">{booking.user.name}</span>
+                  </div>
+                  {booking.user.phone && (
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-base text-gray-500">call</span>
+                      <span className="text-sm text-gray-600">{booking.user.phone}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Date Display */}
               {isGroup ? (
                 <div className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: serviceInfo.color }}>
@@ -440,50 +477,61 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
             {!isAccepted ? (
               <div className="flex flex-col gap-2 w-full sm:w-auto">
-                {(() => {
-                  const remaining = getRemainingTime(booking.createdAt)
-                  const isExpired = !remaining
-
-                  return (
-                    <>
-                      {!isExpired && (
-                        <div className="text-right mb-1">
-                          <span className={`text-sm font-bold ${remaining.includes('0:0') || remaining.startsWith('0:') && parseInt(remaining.split(':')[1]) < 30
-                              ? 'text-red-600 animate-pulse'
-                              : 'text-primary'
-                            }`}>
-                            Expires in: {remaining}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <button
-                          onClick={() => isGroup ? handleBatchReject(group!.bookings.map(b => b.id)) : handleReject(booking.id)}
-                          className="flex-1 sm:flex-none py-2 px-4 rounded-xl border border-slate-200 text-sm font-medium text-text-muted hover:bg-surface transition-colors"
-                        >
-                          Decline {isGroup && 'All'}
-                        </button>
-                        <button
-                          onClick={() => isGroup ? handleBatchAccept(group!.bookings.map(b => b.id)) : handleAccept(booking.id)}
-                          disabled={isExpired}
-                          className={`flex-1 sm:flex-none py-2 px-4 rounded-xl text-sm font-medium text-white transition-colors shadow-lg shadow-primary/20 ${isExpired ? 'bg-gray-400 cursor-not-allowed' : ''
-                            }`}
-                          style={{ backgroundColor: isExpired ? undefined : serviceInfo.color }}
-                        >
-                          {isExpired ? 'Expired' : `Accept ${isGroup ? 'All' : ''}`}
-                        </button>
-                      </div>
-                    </>
-                  )
-                })()}
-
+                <>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => isGroup ? handleBatchReject(group!.bookings.map(b => b.id)) : handleReject(booking.id)}
+                      className="flex-1 sm:flex-none py-2 px-4 rounded-xl border border-slate-200 text-sm font-medium text-text-muted hover:bg-surface transition-colors"
+                    >
+                      Decline {isGroup && 'All'}
+                    </button>
+                    <button
+                      onClick={() => isGroup ? handleBatchAccept(group!.bookings.map(b => b.id)) : handleAccept(booking.id)}
+                      className={`flex-1 sm:flex-none py-2 px-4 rounded-xl text-sm font-medium text-white transition-colors shadow-lg shadow-primary/20`}
+                      style={{ backgroundColor: serviceInfo.color }}>
+                      Accept {isGroup ? 'All' : ''}
+                    </button>
+                  </div>
+                </>
               </div>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
-                <div className="px-4 py-2 rounded-xl bg-green-100 text-green-700 text-sm font-medium">
-                  Accepted
-                </div>
+                {(!booking.startedAt && booking.status === 'IN_PROGRESS') || booking.status === 'ACCEPTED' ? (
+                  isGroup ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleGroupClick(group!)
+                      }}
+                      className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-500 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">visibility</span>
+                      View
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleJobClick(booking)
+                      }}
+                      className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-500 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">visibility</span>
+                      View
+                    </button>
+                  )
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleComplete(booking.id)
+                    }}
+                    className="px-6 py-2 rounded-xl bg-green-600 text-white text-sm font-medium shadow-lg shadow-green-600/25 hover:bg-green-500 transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">check_circle</span>
+                    Complete Job
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -499,6 +547,67 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Critical Alerts Section */}
+      {(() => {
+        const criticalCancellations = bookings.filter(b =>
+          (b.status === 'CANCELLED' || b.status === 'REJECTED') &&
+          (b.bookingDate && (isToday(new Date(b.bookingDate)) || new Date(b.bookingDate) > new Date())) &&
+          !dismissedAlertIds.includes(b.id)
+        )
+
+        if (criticalCancellations.length === 0) return null
+
+        const handleDismiss = () => {
+          const idsToDismiss = criticalCancellations.map(b => b.id)
+          const newDismissed = [...dismissedAlertIds, ...idsToDismiss]
+          setDismissedAlertIds(newDismissed)
+          localStorage.setItem('dismissedAlertIds', JSON.stringify(newDismissed))
+        }
+
+        return (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl animate-in slide-in-from-top-4 fade-in duration-500">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-red-100 rounded-full shrink-0">
+                <span className="material-symbols-outlined text-red-600">warning</span>
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-red-900 font-bold text-lg mb-1">Attention Required</h3>
+                    <p className="text-red-700 text-sm mb-3">
+                      {criticalCancellations.length} upcoming job{criticalCancellations.length > 1 ? 's have' : ' has'} been cancelled or declined recently.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDismiss}
+                    className="px-3 py-1 bg-white border border-red-200 text-red-700 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors shadow-sm"
+                  >
+                    Okay
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {criticalCancellations.map(job => (
+                    <div key={job.id} className="bg-white/60 p-3 rounded-lg flex items-center justify-between border border-red-100">
+                      <div>
+                        <p className="text-red-900 font-medium text-sm">
+                          {job.serviceType} for {job.user.name}
+                        </p>
+                        <p className="text-red-500 text-xs">
+                          Was scheduled for: {job.bookingDate ? format(new Date(job.bookingDate), 'MMM d, yyyy') : 'Pending Date'}
+                        </p>
+                      </div>
+                      <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-full uppercase">
+                        {job.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Welcome & Stats Section */}
       <div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -510,13 +619,29 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
               Welcome back, {firstName}!
             </h1>
           </div>
-          <button
-            className="bg-text-dark text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-primary transition-colors shadow-lg shadow-text-dark/20 flex items-center gap-2"
-            onClick={() => navigate('/bookings')}
-          >
-            <span className="material-symbols-outlined text-lg">history</span>
-            View History
-          </button>
+          {providerProfile && (
+            <div className="bg-card rounded-2xl p-4 border border-slate-100 shadow-sm min-w-[300px]">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-text-dark text-sm">Your Status</h3>
+                <div className={`size-2.5 rounded-full ${providerProfile.isAvailable ? 'bg-success' : 'bg-warning'}`}></div>
+              </div>
+              <p className="text-xs text-text-muted mb-3">
+                {providerProfile.isAvailable
+                  ? 'Accepting jobs'
+                  : 'Not accepting jobs'}
+              </p>
+              <button
+                disabled={isUpdatingAvailability || !providerProfile.isApproved}
+                onClick={() => handleAvailabilityToggle(!providerProfile.isAvailable)}
+                className={`w-full py-2 rounded-lg text-xs font-medium transition-colors ${providerProfile.isAvailable
+                  ? 'bg-warning/10 text-warning hover:bg-warning/20'
+                  : 'bg-success/10 text-success hover:bg-success/20'
+                  } ${!providerProfile.isApproved ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {providerProfile.isAvailable ? 'Go Offline' : 'Go Online'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards ... (Keep existing stats code) */}
@@ -552,19 +677,10 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
         </div>
       </div>
 
-      {/* Scheduled / Upcoming Section */}
-      {upcomingGroups.length > 0 && (
-        <div>
-          <h2 className="text-xl font-bold text-text-dark mb-4">Scheduled & Active Jobs</h2>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {upcomingGroups.map(item => renderJobCard(item, true))}
-          </div>
-        </div>
-      )}
-
-      {/* Available jobs section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 flex flex-col gap-6">
+      {/* Combined Jobs Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Available jobs section */}
+        <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-text-dark">Available Jobs</h2>
             <div className="flex gap-2">
@@ -594,132 +710,84 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
               availableGroups.map(item => renderJobCard(item, false))
             ) : (
               <div className="bg-card rounded-3xl p-12 border border-slate-100 shadow-sm text-center">
-                <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <span className="material-symbols-outlined text-primary text-2xl">inbox</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-text-dark mb-2">No New Requests</h3>
-                  <p className="text-text-muted mb-4">
-                    You're all caught up! New job requests will appear here when customers book services near you.
-                  </p>
-                  <button
-                    className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-light transition-colors"
-                    onClick={() => navigate('/providers')}
-                  >
-                    Browse All Providers
-                  </button>
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="material-symbols-outlined text-primary text-2xl">inbox</span>
                 </div>
+                <h3 className="text-lg font-semibold text-text-dark mb-2">No New Requests</h3>
+                <p className="text-text-muted mb-4">
+                  You're all caught up! New job requests will appear here when customers book services near you.
+                </p>
+                <button
+                  className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-light transition-colors"
+                  onClick={() => navigate('/providers')}
+                >
+                  Browse All Providers
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-6">
-          {/* Status Card and InProgressJob logic ... keeping it as is, or maybe removing InProgressJob from sidebar if it's now in Scheduled? 
-                  For now, let's keep it as a 'Quick Focus' for the *immediate* job, while 'Scheduled' shows the overview. 
-              */}
-          {providerProfile && (
-            /* ... Existing Status Card ... */
-            <div className="bg-card rounded-3xl p-6 border border-slate-100 shadow-sm">
-              {/* ... content ... */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-text-dark">Your Status</h3>
-                <div className={`size-3 rounded-full ${providerProfile.isAvailable ? 'bg-success' : 'bg-warning'}`}></div>
-              </div>
-              {!providerProfile.isApproved ? (
-                <div className="bg-warning/10 border border-warning/20 rounded-xl p-3 mb-4">
-                  <p className="text-sm text-warning font-medium">Profile Pending Approval</p>
-                  <p className="text-xs text-warning">Your profile is awaiting admin approval.</p>
-                </div>
-              ) : (
-                <p className="text-sm text-text-muted mb-4">
-                  {providerProfile.isAvailable
-                    ? 'You are currently accepting new job requests.'
-                    : 'You are not accepting new job requests.'}
-                </p>
-              )}
-              <button
-                disabled={isUpdatingAvailability || !providerProfile.isApproved}
-                onClick={() => handleAvailabilityToggle(!providerProfile.isAvailable)}
-                className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${providerProfile.isAvailable
-                  ? 'bg-warning/10 text-warning hover:bg-warning/20'
-                  : 'bg-success/10 text-success hover:bg-success/20'
-                  } ${!providerProfile.isApproved ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {providerProfile.isAvailable ? 'Go Offline' : 'Go Online'}
-              </button>
+        {/* Scheduled / Upcoming Section */}
+        <div>
+          <h2 className="text-xl font-bold text-text-dark mb-6">Scheduled & Active Jobs</h2>
+          {upcomingGroups.length > 0 ? (
+            <div className="space-y-4">
+              {upcomingGroups.map(item => renderJobCard(item, true))}
             </div>
-          )}
-
-          {inProgressJob && (
-            /* ... Existing InProgress Card ... */
-            <div className="bg-primary text-white rounded-3xl p-6 shadow-lg">
-              {/* ... existing content ... */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                  In Progress
-                </span>
-                <span className="text-xs text-white font-medium">
-                  Started {getTimeElapsed(inProgressJob)} ago
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-1 text-white">
-                {getServiceInfo(inProgressJob.serviceType).label}
-              </h3>
-              <p className="text-sm text-white mb-4">
-                Customer: {inProgressJob.user.name}
-              </p>
-              <div className="grid grid-cols-3 gap-2 text-xs mb-4">
-                <div className="rounded-xl bg-white/20 px-3 py-2 flex items-center gap-2 border border-white/30">
-                  <ClockIcon size={14} color="#FFFFFF" />
-                  <span className="text-white font-medium">{estimateDurationMinutes(inProgressJob)} mins est.</span>
-                </div>
-                <div className="rounded-xl bg-white/20 px-3 py-2 flex items-center gap-2 border border-white/30">
-                  <MapPinIcon size={14} color="#FFFFFF" />
-                  <span className="text-white font-medium">{inProgressJob.user.city || 'Location'}</span>
-                </div>
-                <div className="rounded-xl bg-white/20 px-3 py-2 flex items-center gap-2 border border-white/30">
-                  <UserIcon size={14} color="#FFFFFF" />
-                  <span className="text-white font-medium">{authUser?.name || 'You'}</span>
-                </div>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => handleComplete(inProgressJob.id)}
-                className="w-full bg-white text-primary hover:bg-white/90"
-              >
-                Complete Job
-              </Button>
-              <div className="flex items-center justify-center gap-3 pt-4 border-t border-white/30 mt-4">
-                <button
-                  onClick={() => setIsTrackingModalOpen(true)}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/20"
-                  aria-label="Track customer location"
-                >
-                  <NavigationIcon size={18} color="#FFFFFF" />
-                </button>
-                <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/20" aria-label="Call customer">
-                  <PhoneIcon size={18} color="#FFFFFF" />
-                </button>
-                <button className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/20" aria-label="Message customer">
-                  <MessageIcon size={18} color="#FFFFFF" />
-                </button>
-              </div>
+          ) : (
+            <div className="bg-card rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
+              <p className="text-text-muted">No upcoming jobs scheduled.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Tracking Modal */}
-      {inProgressJob && (
-        <TrackingModal
-          isOpen={isTrackingModalOpen}
-          onClose={() => setIsTrackingModalOpen(false)}
-          booking={inProgressJob}
-        />
+      {/* Group Details Modal */}
+      {selectedGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedGroup(null)}>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Package Details</h3>
+                <p className="text-sm text-text-muted">{selectedGroup.bookings.length} Services</p>
+              </div>
+              <button onClick={() => setSelectedGroup(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {selectedGroup.bookings
+                .sort((a, b) => new Date(a.bookingDate || '').getTime() - new Date(b.bookingDate || '').getTime())
+                .map((booking, index) => (
+                  <div key={booking.id} className="p-4 rounded-2xl border border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-700">Job #{index + 1}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${booking.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        booking.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                        {booking.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                      <span className="material-symbols-outlined text-base">calendar_today</span>
+                      {booking.bookingDate ? format(new Date(booking.bookingDate), 'EEEE, MMMM d, yyyy') : 'Date pending'}
+                    </div>
+                    {(booking.status === 'IN_PROGRESS' || booking.status === 'ACCEPTED') && booking.bookingDate && isToday(new Date(booking.bookingDate)) ? (
+                      <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => handleJobClick(booking)}>
+                        View
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
       )}
+
+
     </div>
   )
 }

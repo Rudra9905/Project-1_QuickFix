@@ -204,6 +204,7 @@ export const ProviderProfileSetup = () => {
                 currentProfile = await providerService.createProfile(user.id, {
                     serviceType: formData.serviceType as ServiceType,
                     description: formData.description,
+                    experienceYears: parseInt(formData.experienceYears),
                     basePrice: formData.basePrice ? parseInt(formData.basePrice) : undefined,
                     locationLat: parseFloat(formData.locationLat),
                     locationLng: parseFloat(formData.locationLng),
@@ -403,7 +404,7 @@ export const ProviderProfileSetup = () => {
                                 {/* Resume Upload */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Resume (PDF) *
+                                        Documents (Ex License or PAN) *
                                     </label>
                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors">
                                         {filePreview.resume ? (

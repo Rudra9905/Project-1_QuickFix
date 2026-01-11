@@ -11,20 +11,10 @@ import {
   UserIcon,
   ClockIcon,
   DollarSignIcon,
-  EyeIcon,
-  MessageIcon,
-  RescheduleIcon,
-  ReceiptIcon,
-  InfoIcon,
-  OrangeClockIcon,
-  HistoryIcon,
   CleaningIcon,
   PlumbingIcon,
   LightningIcon,
-  PaintingIcon,
-  ACRepairIcon,
-  CarpentryIcon,
-  CheckIcon,
+  HistoryIcon,
 } from '../components/icons/CustomIcons'
 import { format, isToday, isTomorrow, parseISO } from 'date-fns'
 
@@ -44,6 +34,7 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: st
   REJECTED: { label: 'Cancelled', bg: '#FEE2E2', text: '#DC2626' },
   CANCELLED: { label: 'Cancelled', bg: '#FEE2E2', text: '#DC2626' },
   COMPLETED: { label: 'Completed', bg: '#D1FAE5', text: '#16A34A' },
+  IN_PROGRESS: { label: 'In Progress', bg: '#DBEAFE', text: '#2563EB' },
 }
 
 type FilterTab = 'all' | 'upcoming' | 'completed' | 'cancelled'
@@ -154,12 +145,9 @@ export const Bookings = () => {
   const [providerProfiles, setProviderProfiles] = useState<ProviderProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
-  const [nowTick, setNowTick] = useState(Date.now())
 
   useEffect(() => {
     fetchBookings()
-    const interval = setInterval(() => setNowTick(Date.now()), 1000)
-    return () => clearInterval(interval)
   }, [user])
 
   const fetchBookings = async () => {
@@ -196,17 +184,33 @@ export const Bookings = () => {
     return profile?.basePrice || null
   }
 
-  // Calculate remaining time for request
-  const getRemainingTime = (createdAt: string) => {
-    const expiresAt = new Date(createdAt).getTime() + 2 * 60 * 1000 // 2 minutes
-    const diff = expiresAt - nowTick
+  const handleCancelBooking = async (bookingId: number) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) return
 
-    if (diff <= 0) return null
-
-    const minutes = Math.floor(diff / 60000)
-    const seconds = Math.floor((diff % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+    try {
+      await bookingService.cancelBooking(bookingId)
+      toast.success('Booking cancelled successfully')
+      fetchBookings() // Refresh list
+    } catch (error) {
+      console.error('Error cancelling booking:', error)
+      toast.error('Failed to cancel booking')
+    }
   }
+
+  const handleBatchCancel = async (bookingIds: number[]) => {
+    if (!window.confirm(`Are you sure you want to cancel all ${bookingIds.length} bookings in this package?`)) return
+
+    try {
+      await Promise.all(bookingIds.map(id => bookingService.cancelBooking(id)))
+      toast.success('All bookings in package cancelled successfully')
+      fetchBookings()
+    } catch (error) {
+      console.error('Error cancelling package:', error)
+      toast.error('Failed to cancel some bookings in the package')
+    }
+  }
+
+
 
   // --- Grouping Logic ---
   const groupBookings = (list: Booking[]) => {
@@ -384,6 +388,13 @@ export const Bookings = () => {
                       <UserIcon size={16} color="#6B7280" />
                       {booking.provider?.name || (isGroup ? group!.provider?.name : 'Assigning provider...')}
                     </div>
+                    {/* OTP Display for User - Only visible to Customers */}
+                    {user?.role === 'USER' && booking.status === 'ACCEPTED' && booking.startJobOtp && (
+                      <div className="mt-2 text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg inline-block">
+                        <span className="font-semibold text-blue-800">Start OTP: {booking.startJobOtp}</span>
+                        <span className="block text-xs text-blue-600 mt-1">Share with provider on arrival</span>
+                      </div>
+                    )}
                     {(booking.note || isGroup) && (
                       <div className="flex items-center gap-2 text-sm text-text-secondary mt-2 bg-gray-50 p-2 rounded">
                         <span className="text-xs">Note: {booking.note || 'Multiple Booking Package'}</span>
@@ -422,29 +433,39 @@ export const Bookings = () => {
                     {statusInfo.label}
                   </div>
                   {booking.status === 'REQUESTED' && (
-                    (() => {
-                      const time = getRemainingTime(booking.createdAt)
-                      if (time) {
-                        return <span className="text-xs text-red-500 font-bold animate-pulse">Expires in {time}</span>
-                      } else if (!time && booking.status === 'REQUESTED') {
-                        return <span className="text-xs text-gray-400">Processing...</span>
-                      }
-                    })()
+                    <span className="text-xs text-gray-400">Pending</span>
                   )}
                 </div>
               </div>
 
               <div className="flex flex-col gap-2 w-full">
                 {/* Actions - Simplified for Group */}
-                <button className="w-full py-2.5 px-4 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary-light transition-colors flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-lg">visibility</span>
-                  View Details
-                </button>
-                {!isGroup && booking.status !== 'ACCEPTED' && booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED' && booking.status !== 'REJECTED' && (
-                  <button className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-text-muted font-medium text-sm hover:border-primary/30 hover:text-primary transition-colors flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-lg">edit_calendar</span>
-                    Reschedule
+
+                {/* Track Service Button for Users */}
+                {!isGroup && user?.role === 'USER' && (booking.status === 'ACCEPTED' || booking.status === 'IN_PROGRESS') && (
+                  <button
+                    onClick={() => window.location.href = `/track-service/${booking.id}`}
+                    className="w-full py-2.5 px-4 rounded-xl bg-white border border-green-500 text-green-600 font-medium text-sm hover:bg-green-50 transition-colors flex items-center justify-center gap-2 mb-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">location_on</span>
+                    Track Service
                   </button>
+                )}
+
+                {/* Cancel & Reschedule Buttons */}
+                {(booking.status === 'REQUESTED' || booking.status === 'ACCEPTED') && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => isGroup
+                        ? handleBatchCancel(group!.bookings.map(b => b.id))
+                        : handleCancelBooking(booking.id)
+                      }
+                      className="w-full py-2.5 px-4 rounded-xl border border-red-200 text-red-600 font-medium text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">cancel</span>
+                      Cancel {isGroup ? 'Package' : ''}
+                    </button>
+                  </div>
                 )}
                 {(booking.status === 'ACCEPTED' || booking.status === 'COMPLETED') && (
                   <button className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-text-muted font-medium text-sm hover:border-primary/30 hover:text-primary transition-colors flex items-center justify-center gap-2">

@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar'
 import { BottomNavigation } from '../BottomNavigation'
 import { EditLocationModal } from '../EditLocationModal'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLocation } from '../../contexts/LocationContext'
 import { userService } from '../../services/userService'
 import { providerService } from '../../services/providerService'
 import toast from 'react-hot-toast'
@@ -25,6 +26,7 @@ interface AddressDetails {
 
 export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
   const { user, updateUser } = useAuth()
+  const { setAddressLocation } = useLocation()
   const [showAddressEditor, setShowAddressEditor] = useState(false)
   const [currentAddress, setCurrentAddress] = useState<AddressDetails>({
     fullAddress: user?.city || ''
@@ -90,6 +92,9 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
           city: newAddress
         })
       }
+
+      // Set the address location in the shared context so provider pages can use it
+      setAddressLocation({ lat, lng });
 
       // Parse the full address to extract components
       const parsedAddress = parseFullAddress(newAddress)

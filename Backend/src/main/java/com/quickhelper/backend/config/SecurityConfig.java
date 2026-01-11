@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/providers/**").permitAll()
                         // Allowing bookings for now to fix provider dashboard access issues
                         .requestMatchers("/api/bookings/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll()
                         // Admin endpoints still restricted
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication

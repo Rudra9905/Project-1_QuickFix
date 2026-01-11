@@ -32,6 +32,8 @@ public class BookingService {
     private final NotificationService notificationService;
     private final org.springframework.scheduling.TaskScheduler taskScheduler;
 
+    // Trigger restart for migration V1.5
+
     @Transactional
     // Creates a new booking request from a user to a provider
     public BookingResponseDTO createBooking(Long userId, BookingRequestDTO request) {
@@ -58,16 +60,27 @@ public class BookingService {
 
         Booking booking = new Booking();
         booking.setUser(user);
+        System.out.println("Processing booking request. Received bookingDate: " + request.getBookingDate());
         booking.setProvider(provider);
         booking.setServiceType(request.getServiceType());
         booking.setNote(request.getNote());
         booking.setStatus(BookingStatus.REQUESTED);
+        if (request.getBookingDate() != null) {
+            try {
+                booking.setBookingDate(java.time.LocalDate.parse(request.getBookingDate()));
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid booking date format. Expected yyyy-MM-dd");
+            }
+        }
+        booking.setPreferredTime(request.getPreferredTime());
+
+        // Generate 6-digit OTP
+        int otpValue = 100000 + new java.util.Random().nextInt(900000);
+        booking.setStartJobOtp(String.valueOf(otpValue));
 
         Booking saved = bookingRepository.save(booking);
         
-        // Schedule auto-rejection check in 2 minutes
-        taskScheduler.schedule(() -> checkAndRejectBooking(saved.getId()), 
-            java.time.Instant.now().plus(2, java.time.temporal.ChronoUnit.MINUTES));
+        // Removed auto-rejection timer - all bookings (including multiple/weekly) can be accepted without expiration
         
         try {
             // Send notification to provider
@@ -233,8 +246,8 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
-        if (booking.getStatus() != BookingStatus.ACCEPTED) {
-            throw new BadRequestException("Only ACCEPTED bookings can be completed");
+        if (booking.getStatus() != BookingStatus.ACCEPTED && booking.getStatus() != BookingStatus.IN_PROGRESS) {
+            throw new BadRequestException("Only ACCEPTED or IN_PROGRESS bookings can be completed");
         }
 
         booking.setStatus(BookingStatus.COMPLETED);
@@ -255,20 +268,19 @@ public class BookingService {
                 updated.getId(),
                 100.0 // Placeholder amount
         );
-        
-        return mapToBookingResponseDTO(updated);
+
+        return mapToBookingResponseDTO(booking);
     }
 
     @Transactional
-    // Marks provider en-route and notifies user
     public BookingResponseDTO providerOnWay(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
-        if (booking.getStatus() != BookingStatus.ACCEPTED) {
-            throw new BadRequestException("Only ACCEPTED bookings can have provider on the way");
+        if (booking.getStatus() != BookingStatus.IN_PROGRESS && booking.getStatus() != BookingStatus.ACCEPTED) {
+             // Relaxed check
         }
-
+        
         // Send notification to user
         notificationService.notifyProviderOnWay(
                 booking.getUser().getId(),
@@ -280,23 +292,67 @@ public class BookingService {
     }
 
     @Transactional
-    // Marks service start and notifies user
-    public BookingResponseDTO startService(Long bookingId) {
+    public BookingResponseDTO providerArrived(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
 
-        if (booking.getStatus() != BookingStatus.ACCEPTED) {
-            throw new BadRequestException("Only ACCEPTED bookings can start service");
+        if (booking.getStatus() != BookingStatus.IN_PROGRESS && booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new BadRequestException("Booking must be IN_PROGRESS to mark arrival");
+        }
+        
+        if (booking.getArrivedAt() != null) {
+             throw new BadRequestException("Provider already marked as arrived");
         }
 
-        // Send notification to user
-        notificationService.notifyServiceStarted(
+        booking.setArrivedAt(LocalDateTime.now());
+        Booking saved = bookingRepository.save(booking);
+        
+        // Notify user
+        notificationService.notifyProviderArrived(
                 booking.getUser().getId(),
                 booking.getId(),
                 booking.getProvider().getName()
-        );
+        ); // Re-using this notification or creating a new specific one ideally
+
+        return mapToBookingResponseDTO(saved);
+    }
+
+    @Transactional
+    // Marks service start and notifies user (OTP Verification)
+    public BookingResponseDTO startService(Long bookingId, String otp) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        // Modified: Allow starting if status is IN_PROGRESS (set at acceptance) or ACCEPTED (legacy/safety)
+        if (booking.getStatus() != BookingStatus.IN_PROGRESS && booking.getStatus() != BookingStatus.ACCEPTED) {
+            throw new BadRequestException("Only IN_PROGRESS or ACCEPTED bookings can start service");
+        }
         
-        return mapToBookingResponseDTO(booking);
+        // Check if already started
+        if (booking.getStartedAt() != null) {
+             throw new BadRequestException("Job already started");
+        }
+
+        // Verify OTP (Exempt Multiple Booking Packages)
+        boolean isPackage = "Multiple Booking Package".equals(booking.getNote());
+        
+        if (!isPackage && (booking.getStartJobOtp() == null || !booking.getStartJobOtp().equals(otp))) {
+            throw new BadRequestException("Invalid Start Job OTP");
+        }
+
+        // Date validation removed to allow flexible start times
+
+        // Set startedAt timestamp
+        booking.setStartedAt(LocalDateTime.now());
+        // Ensure status is IN_PROGRESS (if not already)
+        booking.setStatus(BookingStatus.IN_PROGRESS);
+        
+        Booking saved = bookingRepository.save(booking);
+
+        // Send notification
+        notificationService.notifyServiceStarted(booking.getUser().getId(), booking.getId(), booking.getProvider().getName());
+        
+        return mapToBookingResponseDTO(saved);
     }
 
     @Transactional
@@ -327,6 +383,7 @@ public class BookingService {
         userDTO.setEmail(booking.getUser().getEmail());
         userDTO.setRole(booking.getUser().getRole());
         userDTO.setCity(booking.getUser().getCity());
+        userDTO.setPhone(booking.getUser().getPhone());
 
         UserResponseDTO providerDTO = new UserResponseDTO();
         providerDTO.setId(booking.getProvider().getId());
@@ -334,6 +391,7 @@ public class BookingService {
         providerDTO.setEmail(booking.getProvider().getEmail());
         providerDTO.setRole(booking.getProvider().getRole());
         providerDTO.setCity(booking.getProvider().getCity());
+        providerDTO.setPhone(booking.getProvider().getPhone());
 
         return new BookingResponseDTO(
                 booking.getId(),
@@ -344,7 +402,12 @@ public class BookingService {
                 booking.getNote(),
                 booking.getCreatedAt(),
                 booking.getAcceptedAt(),
-                booking.getCompletedAt()
+                booking.getCompletedAt(),
+                booking.getBookingDate() != null ? booking.getBookingDate().toString() : null,
+                booking.getPreferredTime(),
+                booking.getStartJobOtp(),
+                booking.getArrivedAt() != null ? booking.getArrivedAt().toString() : null,
+                booking.getStartedAt() != null ? booking.getStartedAt().toString() : null
         );
     }
 }

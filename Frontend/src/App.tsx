@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { LocationProvider } from './contexts/LocationContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
 import { Layout } from './components/layout/Layout'
@@ -19,131 +20,156 @@ import { AdminDashboard } from './pages/AdminDashboard'
 import { ProviderReviewDetail } from './pages/ProviderReviewDetail'
 import { ProviderProfileSetup } from './pages/ProviderProfileSetup'
 import { MultipleBookingDates } from './pages/MultipleBookingDates'
+import { ActiveJobPage } from './pages/ActiveJobPage'
+import { TrackServicePage } from './pages/TrackServicePage'
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/providers"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Providers />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/select-provider"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <SelectProvider />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/book/multiple-dates"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <MultipleBookingDates />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bookings"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Bookings />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/earnings"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Earnings />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reviews"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Reviews />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/provider-setup"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProviderProfileSetup />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            {/* Legacy routes redirect to new unified page */}
-            <Route path="/create-provider-profile" element={<Navigate to="/provider-setup" replace />} />
-            <Route path="/complete-provider-profile" element={<Navigate to="/provider-setup" replace />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <Layout showBottomNav={false}>
-                    <AdminDashboard />
-                  </Layout>
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/providers/:id"
-              element={
-                <AdminRoute>
-                  <Layout showBottomNav={false}>
-                    <ProviderReviewDetail />
-                  </Layout>
-                </AdminRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          <LocationProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/providers"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Providers />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/select-provider"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <SelectProvider />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/book/multiple-dates"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <MultipleBookingDates />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Bookings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/earnings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Earnings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviews"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Reviews />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/provider-setup"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProviderProfileSetup />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Legacy routes redirect to new unified page */}
+              <Route path="/create-provider-profile" element={<Navigate to="/provider-setup" replace />} />
+              <Route path="/complete-provider-profile" element={<Navigate to="/provider-setup" replace />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <Layout showBottomNav={false}>
+                      <AdminDashboard />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/providers/:id"
+                element={
+                  <AdminRoute>
+                    <Layout showBottomNav={false}>
+                      <ProviderReviewDetail />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+
+              <Route
+                path="/provider/job/:id/track"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ActiveJobPage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/track-service/:bookingId"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <TrackServicePage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </LocationProvider>
           <Toaster
             position="top-right"
             toastOptions={{
@@ -189,7 +215,7 @@ function App() {
           />
         </NotificationProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </BrowserRouter >
   )
 }
 

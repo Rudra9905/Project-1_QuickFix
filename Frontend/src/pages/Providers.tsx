@@ -7,6 +7,7 @@ import { Loader } from '../components/ui/Loader'
 import { ProviderDetailModal } from '../components/ProviderDetailModal'
 import { providerService } from '../services/providerService'
 import { useAuth } from '../contexts/AuthContext'
+import { useLocation } from '../contexts/LocationContext'
 import toast from 'react-hot-toast'
 import type { ProviderProfile, ServiceType } from '../types'
 import { MapPinIcon, StarIcon, ClockIcon, ImageIcon } from '../components/icons/CustomIcons'
@@ -21,6 +22,7 @@ const SERVICE_TYPES: { value: ServiceType; label: string }[] = [
 
 export const Providers = () => {
   const { user } = useAuth()
+  const { addressLocation } = useLocation()
   const [providers, setProviders] = useState<ProviderProfile[]>([])
   const [filteredProviders, setFilteredProviders] = useState<ProviderProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -63,6 +65,13 @@ export const Providers = () => {
     }
   }, [isLocationChecked, userLocation, user?.city])
 
+  // Re-fetch providers when user city or address location changes (e.g., when address is updated via EditLocationModal)
+  useEffect(() => {
+    if ((user?.city || addressLocation) && isLocationChecked) {
+      fetchProviders()
+    }
+  }, [user?.city, addressLocation])
+
   useEffect(() => {
     filterProviders()
   }, [providers, selectedServiceType])
@@ -72,12 +81,14 @@ export const Providers = () => {
       setIsLoading(true)
 
       let data: ProviderProfile[]
-      if (userLocation) {
-        console.log(`Fetching providers within 30km of (${userLocation.lat}, ${userLocation.lng})`)
+      // Use address location if available (from address change), otherwise use geolocation
+      const locationToUse = addressLocation || userLocation
+      if (locationToUse) {
+        console.log(`Fetching providers within 30km of (${locationToUse.lat}, ${locationToUse.lng})`)
         data = await providerService.getAllProviders(
           undefined,
-          userLocation.lat,
-          userLocation.lng,
+          locationToUse.lat,
+          locationToUse.lng,
           30
         )
       } else if (user?.city) {

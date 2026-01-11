@@ -5,7 +5,7 @@ export type UserRole = 'USER' | 'PROVIDER' | 'ADMIN'
 export type ServiceType = 'PLUMBER' | 'ELECTRICIAN' | 'CLEANER' | 'LAUNDRY' | 'OTHER'
 
 // Booking status: defines the possible states of a booking request
-export type BookingStatus = 'REQUESTED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED'
+export type BookingStatus = 'REQUESTED' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'IN_PROGRESS'
 
 // User interface: represents a user in the system
 export interface User {
@@ -14,6 +14,9 @@ export interface User {
   email: string // User's email address (used for login)
   role: UserRole // User's role (USER or PROVIDER)
   city?: string // Optional city where the user is located
+  phone?: string // Optional phone number
+  locationLat?: number // Optional latitude
+  locationLng?: number // Optional longitude
 }
 
 // RegisterRequest interface: data structure for user registration
@@ -116,6 +119,9 @@ export interface Booking {
   completedAt?: string // Optional timestamp when the service was completed
   bookingDate?: string // Date of the service
   preferredTime?: string // Time of the service
+  startJobOtp?: string
+  arrivedAt?: string
+  startedAt?: string
 }
 
 // BookingRequest interface: data structure for creating a new booking request
@@ -125,6 +131,7 @@ export interface BookingRequest {
   note?: string // Optional note for the provider
   bookingDate?: string // Optional preferred date for the service (ISO format)
   preferredTime?: string // Optional preferred time for the service
+  multipleBooking?: boolean // Flag to indicate if this is part of a multiple booking batch (includes Weekly)
 }
 
 // Review interface: represents a customer review for a completed booking

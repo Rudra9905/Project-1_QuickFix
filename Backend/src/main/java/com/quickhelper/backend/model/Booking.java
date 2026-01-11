@@ -38,12 +38,27 @@ public class Booking {
     @Column(columnDefinition = "TEXT")
     private String note; // Optional customer note
 
+    @Column(name = "start_job_otp")
+    private String startJobOtp; // OTP to verify job start
+
+    @Column(name = "booking_date")
+    private java.time.LocalDate bookingDate;
+
+    @Column(name = "preferred_time")
+    private String preferredTime;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // Created timestamp
 
     @Column(name = "accepted_at")
     private LocalDateTime acceptedAt; // When provider accepted
+
+    @Column(name = "arrived_at")
+    private LocalDateTime arrivedAt; // When provider reached location
+
+    @Column(name = "started_at")
+    private LocalDateTime startedAt; // When provider physically started the job (OTP verified)
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt; // When job finished

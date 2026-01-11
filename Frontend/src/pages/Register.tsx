@@ -83,7 +83,7 @@ export const Register = () => {
         <div className="relative z-10 flex flex-col justify-center items-center w-full px-16 text-white">
           <div className="max-w-md space-y-6 animate-fade-in">
             <h1 className="text-5xl font-bold leading-tight">
-              Join Quick Helper
+              Join QuickFix
             </h1>
             <p className="text-xl text-white/90 leading-relaxed">
               Create your account and start connecting with trusted service providers or offer your own services to help others.

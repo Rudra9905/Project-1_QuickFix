@@ -191,6 +191,19 @@ public class NotificationService {
         );
     }
 
+    public void notifyProviderArrived(Long userId, Long bookingId, String providerName) {
+        // Notify user that provider has arrived
+        createAndSendNotification(
+                userId,
+                UserRole.USER,
+                NotificationType.PROVIDER_ARRIVED,
+                "Provider Arrived",
+                providerName + " has arrived at your location",
+                false,
+                bookingId
+        );
+    }
+
     public void notifyServiceStarted(Long userId, Long bookingId, String providerName) {
         // Notify user that service has started
         createAndSendNotification(

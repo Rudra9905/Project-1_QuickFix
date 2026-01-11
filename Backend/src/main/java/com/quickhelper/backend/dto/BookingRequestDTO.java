@@ -14,4 +14,11 @@ public class BookingRequestDTO {
     private ServiceType serviceType;
 
     private String note;
+
+    private Boolean multipleBooking;
+
+    // Using String to avoid Jackson deserialization issues
+    private String bookingDate;
+
+    private String preferredTime;
 }

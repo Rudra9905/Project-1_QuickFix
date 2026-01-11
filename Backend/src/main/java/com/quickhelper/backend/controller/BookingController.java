@@ -76,10 +76,19 @@ public class BookingController {
         return ResponseEntity.ok(booking);
     }
 
-    @PutMapping("/{bookingId}/start-service")
+    @PutMapping("/{bookingId}/arrived")
+    // Provider status: arrived at customer location
+    public ResponseEntity<BookingResponseDTO> providerArrived(@PathVariable Long bookingId) {
+        BookingResponseDTO booking = bookingService.providerArrived(bookingId);
+        return ResponseEntity.ok(booking);
+    }
+
+    @PutMapping("/{bookingId}/start")
     // Provider status: service started
-    public ResponseEntity<BookingResponseDTO> startService(@PathVariable Long bookingId) {
-        BookingResponseDTO booking = bookingService.startService(bookingId);
+    public ResponseEntity<BookingResponseDTO> startService(
+            @PathVariable Long bookingId,
+            @RequestParam String otp) {
+        BookingResponseDTO booking = bookingService.startService(bookingId, otp);
         return ResponseEntity.ok(booking);
     }
 

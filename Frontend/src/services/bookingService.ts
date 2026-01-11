@@ -77,4 +77,23 @@ export const bookingService = {
     )
     return response.data
   },
+
+  // Marks a booking as started (called by provider when they arrive/start)
+  // @param bookingId - The ID of the booking to start
+  // @returns Promise that resolves to the updated Booking object with IN_PROGRESS status
+  // Marks a booking as started (called by provider when they arrive/start)
+  // @param bookingId - The ID of the booking to start
+  // @param otp - The OTP provided by user to verify start
+  // @returns Promise that resolves to the updated Booking object with IN_PROGRESS status
+  startService: async (bookingId: number, otp: string): Promise<Booking> => {
+    const response = await apiClient.put<Booking>(
+      `/bookings/${bookingId}/start?otp=${otp}`
+    )
+    return response.data
+  },
+
+  markArrived: async (bookingId: number): Promise<Booking> => {
+    const response = await apiClient.put<Booking>(`/bookings/${bookingId}/arrived`)
+    return response.data
+  },
 }

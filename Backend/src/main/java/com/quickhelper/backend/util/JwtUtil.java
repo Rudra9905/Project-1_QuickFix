@@ -12,7 +12,10 @@ import java.util.Date;
 @Component
 // Simple JWT helper for issuing and validating tokens
 public class JwtUtil {
-    private Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    // FIXED SECRET KEY for development stability (prevents token invalidation on restart)
+    // In production, this should be in application.properties or environment variable
+    private static final String SECRET_STRING = "MySuperSecretKeyForQuickHelperProject2026_Secure_Enough_For_MVP";
+    private Key secretKey = Keys.hmacShaKeyFor(SECRET_STRING.getBytes());
     private long expirationTime = 86400000; // 24 hours in milliseconds
 
     public String generateToken(Long userId, String role) {
@@ -24,7 +27,7 @@ public class JwtUtil {
                 .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(secretKey)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
