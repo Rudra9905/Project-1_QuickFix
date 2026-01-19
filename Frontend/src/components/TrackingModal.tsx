@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { Modal } from './ui/Modal'
-import { Loader } from './ui/Loader'
 import { providerService } from '../services/providerService'
 import { useAuth } from '../contexts/AuthContext'
 import type { Booking, ProviderProfile, User } from '../types'
@@ -386,8 +385,11 @@ export const TrackingModal = ({ isOpen, onClose, booking }: TrackingModalProps) 
 
         {/* Map */}
         {isLoading ? (
-          <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-            <Loader size="lg" />
+          <div className="h-96 bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-2"></div>
+              <div className="h-4 bg-gray-300 rounded w-32"></div>
+            </div>
           </div>
         ) : providerProfile?.locationLat && providerProfile?.locationLng && userLocation ? (
           <div className="relative">

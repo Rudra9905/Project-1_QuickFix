@@ -15,8 +15,12 @@ import java.util.Optional;
 @Repository
 // JPA repository for provider profiles with city/service availability lookups
 public interface ProviderProfileRepository extends JpaRepository<ProviderProfile, Long> {
-    Optional<ProviderProfile> findByUser(User user);
-    Optional<ProviderProfile> findByUserId(Long userId);
+    @Query("SELECT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE p.user = :user")
+    Optional<ProviderProfile> findByUser(@Param("user") User user);
+
+    @Query("SELECT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE p.user.id = :userId")
+    Optional<ProviderProfile> findByUserId(@Param("userId") Long userId);
+
     List<ProviderProfile> findByServiceTypeAndIsAvailableTrue(ServiceType serviceType);
     List<ProviderProfile> findByIsAvailableTrue();
     List<ProviderProfile> findByProfileStatus(ProfileStatus status);
@@ -24,7 +28,7 @@ public interface ProviderProfileRepository extends JpaRepository<ProviderProfile
     @Query("SELECT p FROM ProviderProfile p WHERE p.user.city = :city")
     List<ProviderProfile> findByUserCity(@Param("city") String city);
     
-    @Query("SELECT p FROM ProviderProfile p WHERE p.user.city = :city AND p.serviceType = :serviceType AND p.isAvailable = true")
+    @Query("SELECT DISTINCT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE p.user.city = :city AND p.serviceType = :serviceType AND p.isAvailable = true")
     List<ProviderProfile> findByUserCityAndServiceTypeAndIsAvailableTrue(@Param("city") String city, @Param("serviceType") ServiceType serviceType);
 
     Long countByIsApprovedTrue();

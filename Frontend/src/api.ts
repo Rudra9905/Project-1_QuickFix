@@ -41,7 +41,9 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080'
 // @param token - Optional JWT token for authentication
 // @returns Promise that resolves to the response data
 // @throws Error if the request fails
-async function api<T>(
+// @returns Promise that resolves to the response data
+// @throws Error if the request fails
+export async function api<T>(
   path: string,
   options: RequestInit = {},
   token?: string
@@ -55,13 +57,13 @@ async function api<T>(
       ...(token ? { Authorization: `Bearer ${token}` } : {}), // Add auth header if token provided
     },
   })
-  
+
   // Check if response is successful (status 200-299)
   if (!res.ok) {
     const text = await res.text() // Get error message from response
     throw new Error(text || `Request failed: ${res.status}`) // Throw error with message
   }
-  
+
   // Parse and return JSON response
   return res.json() as Promise<T>
 }
@@ -78,7 +80,7 @@ export const authApi = {
     phone: string
     role: Role
   }) => api<AuthResponse>('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  
+
   // Login with email and password
   // @param body - Login credentials (email, password)
   // @returns Promise that resolves to AuthResponse with token
@@ -94,7 +96,7 @@ export const userApi = {
   // @returns Promise that resolves to array of Provider objects
   providers: (serviceType: string, token: string) =>
     api<Provider[]>(`/api/user/providers?serviceType=${encodeURIComponent(serviceType)}`, {}, token),
-  
+
   // Create a new booking request
   // @param body - Booking details (userId, providerId, serviceType, address, coordinates)
   // @param token - JWT authentication token
@@ -110,7 +112,7 @@ export const userApi = {
     },
     token: string
   ) => api<Booking>('/api/user/book', { method: 'POST', body: JSON.stringify(body) }, token),
-  
+
   // Get all bookings for a specific user
   // @param userId - ID of the user
   // @param token - JWT authentication token
@@ -127,18 +129,32 @@ export const providerApi = {
   // @returns Promise that resolves to array of Booking objects
   requests: (providerId: number, token: string) =>
     api<Booking[]>(`/api/provider/requests/${providerId}`, {}, token),
-  
+
   // Accept a booking request
   // @param bookingId - ID of the booking to accept
   // @param token - JWT authentication token
   // @returns Promise that resolves to updated Booking object
   accept: (bookingId: number, token: string) =>
     api<Booking>(`/api/provider/request/${bookingId}/accept`, { method: 'POST' }, token),
-  
+
   // Reject a booking request
   // @param bookingId - ID of the booking to reject
   // @param token - JWT authentication token
   // @returns Promise that resolves to updated Booking object
   reject: (bookingId: number, token: string) =>
     api<Booking>(`/api/provider/request/${bookingId}/reject`, { method: 'POST' }, token),
+}
+
+export const paymentApi = {
+  createPaymentIntent: (amount: number, currency: string, token: string) =>
+    api<{ clientSecret: string; id: string }>('/api/payments/create-payment-intent', {
+      method: 'POST',
+      body: JSON.stringify({ amount, currency })
+    }, token),
+
+  onboardProvider: (providerId: number, refreshUrl: string, returnUrl: string, token: string) =>
+    api<{ url: string }>('/api/payments/onboard-provider', {
+      method: 'POST',
+      body: JSON.stringify({ providerId, refreshUrl, returnUrl })
+    }, token)
 }

@@ -34,6 +34,10 @@ class WebSocketService {
   private onNotificationCallback: ((notification: Notification) => void) | null = null
   // STOMP subscription object for unsubscribing when needed
   private subscription: any = null
+  // STOMP subscription for events
+  private eventsSubscription: any = null
+  // STOMP subscription for global events
+  private globalEventsSubscription: any = null
   // Timeout reference for scheduled reconnection attempts
   private reconnectTimeout: any = null
 
@@ -48,10 +52,10 @@ class WebSocketService {
       return
     }
 
-    // Store connection parameters
-    this.userId = userId
-    this.userRole = userRole.toLowerCase() // Normalize role to lowercase for topic subscription
-    this.onNotificationCallback = onNotification
+    // Store connection parameters BEFORE disconnect (so they're available during reconnection)
+    const savedUserId = userId
+    const savedUserRole = userRole.toLowerCase()
+    const savedCallback = onNotification
 
     // Clear any existing reconnection timeout to prevent multiple reconnection attempts
     if (this.reconnectTimeout) {
@@ -60,7 +64,13 @@ class WebSocketService {
     }
 
     // Disconnect existing connection if any (cleanup before new connection)
+    // Note: disconnect() will clear this.userId, so we'll restore it after
     this.disconnect()
+    
+    // Restore connection parameters after disconnect
+    this.userId = savedUserId
+    this.userRole = savedUserRole
+    this.onNotificationCallback = savedCallback
 
     // Get JWT token from localStorage for authentication
     const token = localStorage.getItem('token')
@@ -74,7 +84,7 @@ class WebSocketService {
     // Construct WebSocket URL with token parameter for authentication
     let wsUrl: string
     const apiUrl = getApiUrl()
-    
+
     // Determine WebSocket URL based on environment (development vs production)
     if (apiUrl.includes('localhost:8080') || apiUrl.includes('127.0.0.1:8080')) {
       // Development - direct connection to localhost
@@ -84,13 +94,13 @@ class WebSocketService {
       const baseUrl = apiUrl.replace('/api', '')
       wsUrl = `${baseUrl}/ws?token=${token}`
     }
-    
+
     console.log('Connecting to WebSocket:', wsUrl)
 
     // Create SockJS socket connection (provides WebSocket-like API with fallbacks)
     // @ts-ignore
     const socket = new SockJS(wsUrl)
-    
+
     // Create STOMP client with configuration
     this.client = new Client({
       webSocketFactory: () => socket as any, // Use SockJS as the underlying transport
@@ -104,20 +114,25 @@ class WebSocketService {
       onConnect: (frame) => {
         // Callback executed when WebSocket connection is successfully established
         console.log('WebSocket connected successfully', frame)
+        console.log('[WebSocketService] Connection established - userId:', this.userId, 'userRole:', this.userRole)
         this.isConnected = true
         this.reconnectAttempts = 0 // Reset reconnection counter on successful connection
 
+        // Use this.userId to ensure we have the current value (might differ from closure if reconnected)
+        const currentUserId = this.userId || userId
+        console.log('[WebSocketService] Using userId:', currentUserId, '(from this.userId:', this.userId, 'or closure:', userId, ')')
+
         // Subscribe to user-specific notification topic for receiving real-time notifications
-        if (this.client && userId && this.userRole) {
+        if (this.client && currentUserId && this.userRole) {
           // Construct topic path based on user role and ID (e.g., /topic/user/123/notifications)
-          const topic = `/topic/${this.userRole}/${userId}/notifications`
+          const topic = `/topic/${this.userRole}/${currentUserId}/notifications`
           console.log('Subscribing to topic:', topic)
-          
+
           // Unsubscribe from previous subscription if exists (cleanup)
           if (this.subscription) {
             this.subscription.unsubscribe()
           }
-          
+
           // Subscribe to the notification topic and handle incoming messages
           this.subscription = this.client.subscribe(topic, (message: IMessage) => {
             try {
@@ -125,14 +140,14 @@ class WebSocketService {
               console.log('=== NOTIFICATION RECEIVED ===')
               console.log('Raw message body:', message.body)
               console.log('Message headers:', message.headers)
-              
+
               // Parse JSON notification from message body
               const notification: Notification = JSON.parse(message.body)
               console.log('Parsed notification:', notification)
               console.log('Notification ID:', notification.id)
               console.log('Notification Title:', notification.title)
               console.log('Notification Message:', notification.message)
-              
+
               // Call the registered callback function to handle the notification
               if (this.onNotificationCallback) {
                 console.log('Calling notification callback...')
@@ -148,8 +163,56 @@ class WebSocketService {
               console.error('Message body that failed:', message.body)
             }
           })
-          
+
           console.log('Successfully subscribed to notifications')
+
+          // Subscribe to user-specific events topic
+          const eventsTopic = `/topic/${this.userRole}/${currentUserId}/events`;
+          console.log('Subscribing to events topic:', eventsTopic);
+          this.eventsSubscription = this.client.subscribe(eventsTopic, (message: IMessage) => {
+            try {
+              const eventData = JSON.parse(message.body);
+              console.log('Received event:', eventData);
+
+              // Call the appropriate event handlers
+              this.handleEvent(eventData.type, eventData.data);
+            } catch (error) {
+              console.error('✗ Error parsing event:', error);
+              console.error('Message body that failed:', message.body);
+            }
+          });
+
+          // Subscribe to global events topic (for system-wide events)
+          const globalEventsTopic = `/topic/events`;
+          console.log('Subscribing to global events topic:', globalEventsTopic);
+          this.globalEventsSubscription = this.client.subscribe(globalEventsTopic, (message: IMessage) => {
+            try {
+              const eventData = JSON.parse(message.body);
+              console.log('Received global event:', eventData);
+
+              // Call the appropriate event handlers
+              this.handleEvent(eventData.type, eventData.data);
+            } catch (error) {
+              console.error('✗ Error parsing global event:', error);
+              console.error('Message body that failed:', message.body);
+            }
+          });
+
+          // Subscribe to chat topics if there's a pending chat callback
+          if (this.pendingChatCallback) {
+            console.log('Subscribing to chat topics after connection established (pending callback)');
+            this.subscribeToChat(this.pendingChatCallback);
+            this.pendingChatCallback = null; // Clear the pending callback
+          } else if (this.chatCallbacks.size > 0) {
+            // Re-subscribe if we have active callbacks but lost connection
+            console.log('Restoring chat subscriptions for ' + this.chatCallbacks.size + ' active callbacks');
+            // Force re-subscription by clearing the old subscription reference first
+            this.chatSubscription = null;
+            this.chatQueueSubscription = null;
+            // Re-establish the subscription - this will notify all existing callbacks
+            this.setupChatSubscriptionIO();
+            console.log('Chat subscriptions restored successfully');
+          }
         }
       },
       onDisconnect: () => {
@@ -157,7 +220,11 @@ class WebSocketService {
         console.log('WebSocket disconnected')
         this.isConnected = false
         this.subscription = null // Clear subscription reference
-        
+        this.chatSubscription = null
+        this.chatQueueSubscription = null
+        this.eventsSubscription = null
+        this.globalEventsSubscription = null
+
         // Schedule automatic reconnection if user is still logged in (not manually disconnected)
         if (this.userId && this.userRole) {
           this.scheduleReconnect()
@@ -198,7 +265,7 @@ class WebSocketService {
   private handleConnectionError() {
     this.isConnected = false
     this.reconnectAttempts++ // Increment reconnection attempt counter
-    
+
     // Stop trying to reconnect after maximum attempts reached
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnection attempts reached')
@@ -215,13 +282,13 @@ class WebSocketService {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
     }
-    
+
     // Exponential backoff: increase delay with each attempt (1.5x multiplier)
     // This prevents overwhelming the server with rapid reconnection attempts
     const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts)
-    
+
     console.log(`Scheduling reconnection attempt ${this.reconnectAttempts + 1} in ${delay}ms`)
-    
+
     // Schedule reconnection after calculated delay
     this.reconnectTimeout = setTimeout(() => {
       if (this.userId && this.userRole) {
@@ -239,13 +306,25 @@ class WebSocketService {
       clearTimeout(this.reconnectTimeout)
       this.reconnectTimeout = null
     }
-    
+
     // Unsubscribe from notification topic if subscribed
     if (this.subscription) {
       this.subscription.unsubscribe()
       this.subscription = null
     }
-    
+
+    // Unsubscribe from events topic if subscribed
+    if (this.eventsSubscription) {
+      this.eventsSubscription.unsubscribe()
+      this.eventsSubscription = null
+    }
+
+    // Unsubscribe from global events topic if subscribed
+    if (this.globalEventsSubscription) {
+      this.globalEventsSubscription.unsubscribe()
+      this.globalEventsSubscription = null
+    }
+
     // Deactivate STOMP client and close WebSocket connection
     if (this.client) {
       try {
@@ -255,7 +334,7 @@ class WebSocketService {
       }
       this.client = null
     }
-    
+
     // Reset all connection state
     this.isConnected = false
     this.userId = null
@@ -273,11 +352,261 @@ class WebSocketService {
 
   // Gets the current connection status and user information
   // @returns Object containing connection status, userId, and userRole
+  // Chat Support
+  private chatSubscription: any = null
+  private chatQueueSubscription: any = null
+  private pendingChatCallback: ((message: any) => void) | null = null
+  private chatCallbacks: Set<(message: any) => void> = new Set()
+  private eventCallbacks: Map<string, Set<(data: any) => void>> = new Map()
+
+  subscribeToChat(callback: (message: any) => void) {
+    console.log('[WebSocketService] subscribeToChat called, current callbacks:', this.chatCallbacks.size);
+    
+    // Add the callback to our set of callbacks
+    this.chatCallbacks.add(callback);
+    console.log('[WebSocketService] Callback added, total callbacks:', this.chatCallbacks.size);
+
+    // If not connected, we'll subscribe when connection is established
+    if (!this.client) {
+      console.warn('[WebSocketService] WebSocket client not initialized, cannot subscribe to chat yet');
+      return {
+        unsubscribe: () => {
+          // Remove the callback from our set
+          this.chatCallbacks.delete(callback);
+          console.log('[WebSocketService] Callback removed (client not initialized), remaining:', this.chatCallbacks.size);
+        }
+      };
+    }
+
+    // If not connected, we'll set up a mechanism to subscribe when connection is established
+    if (!this.isConnected) {
+      console.warn('[WebSocketService] WebSocket not connected, will subscribe to chat when connected');
+      // Store the callback to use when connection is established
+      this.pendingChatCallback = callback;
+      // This will be handled in the onConnect method
+      return {
+        unsubscribe: () => {
+          // Clear the pending callback if unsubscribed
+          if (this.pendingChatCallback === callback) {
+            this.pendingChatCallback = null;
+          }
+          // Remove the callback from our set
+          this.chatCallbacks.delete(callback);
+          console.log('[WebSocketService] Callback removed (not connected), remaining:', this.chatCallbacks.size);
+        }
+      };
+    }
+
+    // Initialize the actual IO subscription (always call this to ensure subscriptions are active)
+    console.log('[WebSocketService] Setting up chat subscription IO');
+    this.setupChatSubscriptionIO();
+
+    return {
+      unsubscribe: () => {
+        console.log('[WebSocketService] Unsubscribing chat callback');
+        // Remove the callback from our set
+        this.chatCallbacks.delete(callback);
+        console.log('[WebSocketService] Callback removed, remaining:', this.chatCallbacks.size);
+
+        // If no more callbacks remain, unsubscribe from WebSocket
+        if (this.chatCallbacks.size === 0) {
+          console.log('[WebSocketService] No more callbacks, unsubscribing from WebSocket topics');
+          if (this.chatSubscription) {
+            this.chatSubscription.unsubscribe();
+            this.chatSubscription = null;
+          }
+          if (this.chatQueueSubscription) {
+            this.chatQueueSubscription.unsubscribe();
+            this.chatQueueSubscription = null;
+          }
+        }
+      }
+    };
+  }
+
+  // Private method to handle the actual STOMP subscription for chat
+  private setupChatSubscriptionIO() {
+    if (!this.client || !this.isConnected || !this.userId) {
+      console.warn('Cannot setup chat subscription: client=', !!this.client, 'connected=', this.isConnected, 'userId=', this.userId);
+      return;
+    }
+
+    // Always recreate subscriptions to ensure they're active (handles reconnection scenarios)
+    if (this.chatSubscription) {
+      try {
+        this.chatSubscription.unsubscribe();
+      } catch (e) {
+        console.warn('Error unsubscribing from chat topic:', e);
+      }
+      this.chatSubscription = null;
+    }
+
+    if (this.chatQueueSubscription) {
+      try {
+        this.chatQueueSubscription.unsubscribe();
+      } catch (e) {
+        console.warn('Error unsubscribing from chat queue:', e);
+      }
+      this.chatQueueSubscription = null;
+    }
+
+    // Subscribe to public topic for messages from others
+    const topic = `/topic/user/${this.userId}/chat`;
+    console.log('Subscribing to chat topic:', topic);
+    try {
+      this.chatSubscription = this.client.subscribe(topic, (message: IMessage) => {
+        try {
+          const chatMsg = JSON.parse(message.body);
+          console.log('[WebSocketService] Chat message received on topic:', topic);
+          console.log('[WebSocketService] Message data:', chatMsg);
+          console.log('[WebSocketService] Notifying', this.chatCallbacks.size, 'callbacks');
+          // Notify all registered callbacks
+          this.chatCallbacks.forEach((cb, index) => {
+            try {
+              console.log(`[WebSocketService] Calling callback ${index + 1}/${this.chatCallbacks.size}`);
+              cb(chatMsg);
+            } catch (error) {
+              console.error(`[WebSocketService] Error in chat callback ${index + 1}:`, error);
+            }
+          });
+        } catch (e) {
+          console.error('[WebSocketService] Failed to parse chat message from topic:', e);
+        }
+      });
+      console.log('Successfully subscribed to chat topic');
+    } catch (e) {
+      console.error('Failed to subscribe to chat topic:', e);
+    }
+
+    // Subscribe to user queue for messages sent back to sender
+    const queueTopic = `/user/queue/messages`;
+    console.log('Subscribing to chat queue topic:', queueTopic);
+    try {
+      this.chatQueueSubscription = this.client.subscribe(queueTopic, (message: IMessage) => {
+        try {
+          const chatMsg = JSON.parse(message.body);
+          console.log('[WebSocketService] Chat message received on queue:', queueTopic);
+          console.log('[WebSocketService] Message data:', chatMsg);
+          console.log('[WebSocketService] Notifying', this.chatCallbacks.size, 'callbacks');
+          // Notify all registered callbacks
+          this.chatCallbacks.forEach((cb, index) => {
+            try {
+              console.log(`[WebSocketService] Calling callback ${index + 1}/${this.chatCallbacks.size}`);
+              cb(chatMsg);
+            } catch (error) {
+              console.error(`[WebSocketService] Error in chat callback ${index + 1}:`, error);
+            }
+          });
+        } catch (e) {
+          console.error('[WebSocketService] Failed to parse chat message from queue:', e);
+        }
+      });
+      console.log('Successfully subscribed to chat queue');
+    } catch (e) {
+      console.error('Failed to subscribe to chat queue:', e);
+    }
+  }
+
+  sendChat(message: any) {
+    if (!this.client || !this.isConnected) {
+      console.error('Cannot send chat: WebSocket not connected');
+      console.log('Attempting to establish WebSocket connection for chat...');
+
+      // Check if we have stored credentials to establish connection
+      if (this.userId && this.userRole) {
+        // Create a temporary callback for this connection attempt
+        const tempCallback = (notification: any) => {
+          console.log('Temp notification callback:', notification);
+        };
+
+        // Establish connection with available credentials
+        this.connect(this.userId, this.userRole, this.onNotificationCallback || tempCallback);
+
+        // Retry sending after a brief delay to allow connection to establish
+        setTimeout(() => {
+          if (this.client && this.isConnected) {
+            this.client.publish({
+              destination: '/app/chat',
+              body: JSON.stringify(message)
+            });
+            console.log('Chat message sent after reconnecting');
+          } else {
+            console.error('Failed to establish WebSocket connection to send message');
+          }
+        }, 500);
+      } else {
+        console.error('Cannot reconnect: Missing user credentials');
+        console.log('Available credentials - userId:', this.userId, 'userRole:', this.userRole, 'hasCallback:', !!this.onNotificationCallback);
+      }
+      return;
+    }
+
+    this.client.publish({
+      destination: '/app/chat',
+      body: JSON.stringify(message)
+    });
+  }
+
+  // Method to initialize WebSocket connection with user credentials if not already connected
+  ensureConnection(userId: number, userRole: string) {
+    // Check if we need to connect (not connected OR connected as different user)
+    // using loose equality for userId to handle string/number differences
+    if (!this.isConnected || this.userId != userId) {
+      console.log('Initializing WebSocket connection for chat with user:', userId, 'role:', userRole);
+      console.log('Current state:', { isConnected: this.isConnected, currentUserId: this.userId });
+
+      // Create a minimal notification callback
+      const minimalNotificationCallback = (notification: any) => {
+        console.log('Received notification:', notification);
+      };
+
+      this.connect(userId, userRole, this.onNotificationCallback || minimalNotificationCallback);
+    }
+  }
+
   getConnectionStatus(): { isConnected: boolean; userId: number | null; userRole: string | null } {
     return {
       isConnected: this.isConnected,
       userId: this.userId,
       userRole: this.userRole,
+    }
+  }
+
+  // Subscribe to specific event types
+  subscribeToEvent(eventType: string, callback: (data: any) => void) {
+    if (!this.eventCallbacks.has(eventType)) {
+      this.eventCallbacks.set(eventType, new Set());
+    }
+
+    const callbacks = this.eventCallbacks.get(eventType)!;
+    callbacks.add(callback);
+
+    return {
+      unsubscribe: () => {
+        const callbacks = this.eventCallbacks.get(eventType);
+        if (callbacks) {
+          callbacks.delete(callback);
+
+          // Clean up empty sets
+          if (callbacks.size === 0) {
+            this.eventCallbacks.delete(eventType);
+          }
+        }
+      }
+    };
+  }
+
+  // Method to handle incoming events from WebSocket
+  private handleEvent(eventType: string, data: any) {
+    const callbacks = this.eventCallbacks.get(eventType);
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in ${eventType} event callback:`, error);
+        }
+      });
     }
   }
 }

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Loader } from './ui/Loader'
+import { PageLoadingSkeleton } from './ui/Loader'
 
 // Route guard that blocks access for unauthenticated users
 interface ProtectedRouteProps {
@@ -13,11 +13,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Show loading state while auth status is being determined
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader size="lg" />
-      </div>
-    )
+    return <PageLoadingSkeleton />
   }
 
   // Redirect unauthenticated users to login page

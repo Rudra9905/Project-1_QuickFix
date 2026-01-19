@@ -151,9 +151,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, [user, lastFetchTime, location.pathname])
 
   useEffect(() => {
-    if (user && isNotificationsRoute()) {
-      loadNotifications()
-
+    if (user) {  // Connect WebSocket for any route when user is logged in
       // Small delay to ensure user is fully loaded
       const connectTimer = setTimeout(() => {
         logInfo('Connecting WebSocket for user:', user.id, 'role:', user.role)
@@ -166,10 +164,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         websocketService.disconnect()
       }
     } else {
-      // If user logs out or navigates away from eligible routes, ensure cleanup
+      // If user logs out, ensure cleanup
       websocketService.disconnect()
     }
-  }, [user?.id, location.pathname]) // Depend on user and route so we can scope behavior
+
+    // Also load notifications if on eligible route
+    if (user && isNotificationsRoute()) {
+      loadNotifications()
+    }
+  }, [user?.id]) // Only depend on user ID change, not route changes for connection behavior
 
   const markAsRead = async (notificationId: number) => {
     try {

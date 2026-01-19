@@ -18,12 +18,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .addInterceptors(websocketHandshakeInterceptor)
+                .setHandshakeHandler(new CustomHandshakeHandler())
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
     }

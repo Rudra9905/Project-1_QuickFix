@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Select } from '../components/ui/Select'
-import { Loader } from '../components/ui/Loader'
+import { PageLoadingSkeleton } from '../components/ui/Loader'
 import { AlertCircleIcon, CheckIcon, ClockIcon, XCircleIcon } from '../components/icons/CustomIcons'
 import toast from 'react-hot-toast'
 import type { ServiceType, ProviderProfile } from '../types'
@@ -225,11 +225,7 @@ export const ProviderProfileCompletion = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <PageLoadingSkeleton />
   }
 
   if (!user || user.role !== 'PROVIDER') {

@@ -15,6 +15,13 @@ import {
     CheckIcon,
     UserIcon,
 } from './icons/CustomIcons'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements } from '@stripe/react-stripe-js'
+import { PaymentForm } from './PaymentForm'
+import { paymentApi } from '../api'
+
+// Initialize Stripe outside component
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
 interface ProviderDetailModalProps {
     isOpen: boolean
@@ -46,6 +53,12 @@ export const ProviderDetailModal = ({
     const [selectedService, setSelectedService] = useState<ServiceOffering | null>(null)
     const [isLoadingServices, setIsLoadingServices] = useState(false)
 
+    // Payment State
+    const [clientSecret, setClientSecret] = useState<string | null>(null)
+    const [paymentAmount, setPaymentAmount] = useState(0)
+    const [showPayment, setShowPayment] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'CASH'>('ONLINE')
+
     // Fetch service offerings when modal opens
     useEffect(() => {
         if (isOpen && provider) {
@@ -74,7 +87,8 @@ export const ProviderDetailModal = ({
         }
     }
 
-    const handleBookService = async () => {
+    // Initiate Booking Flow (Step 1: Get Payment Intent)
+    const handleInitiateBooking = async () => {
         if (!userId || userRole !== 'USER') {
             toast.error('Please login as a user to book services')
             return
@@ -85,7 +99,6 @@ export const ProviderDetailModal = ({
             return
         }
 
-        // If services exist but none selected, require selection
         if (serviceOfferings.length > 0 && !selectedService) {
             toast.error('Please select a service')
             return
@@ -93,28 +106,87 @@ export const ProviderDetailModal = ({
 
         setIsBooking(true)
         try {
+            let amount = 0
+            if (selectedService) {
+                amount = selectedService.price
+            } else if (provider.basePrice) {
+                amount = provider.basePrice
+            }
+
+            if (amount <= 0) {
+                // Free service or error, assume direct booking for now
+                completeBooking()
+                return
+            }
+
+            setPaymentAmount(amount)
+
+            if (paymentMethod === 'CASH') {
+                completeBooking()
+                return
+            }
+
+            // Get Client Secret
+            // Note: Amount should be in smallest currency unit (e.g., paise for INR). 
+            // Assuming backend expects amount in normal unit and converts, or we convert here.
+            // Stripe expects integer cents/paise. Let's assume input is INR and send paise.
+            const amountInPaise = Math.round(amount * 100)
+            // We need a token, assuming we can get it from localStorage or context. 
+            // Ideally it should be passed in props or context.
+            // For now assuming we have a way to get it or the api wrapper handles it if we pass context?
+            // api.ts wrapper usually gets token from storage if not passed, but here it takes it as arg.
+            // Let's assume we retrieve it from localStorage for now as a quick fix or use a prop if available.
+            const token = localStorage.getItem('token') || ''
+
+            const response = await paymentApi.createPaymentIntent(amountInPaise, 'inr', token)
+            setClientSecret(response.clientSecret)
+            setShowPayment(true)
+
+        } catch (error: any) {
+            console.error('Payment initiation failed', error)
+            toast.error('Failed to initiate payment')
+        } finally {
+            setIsBooking(false)
+        }
+    }
+
+    const completeBooking = async (paymentId?: string) => {
+        setIsBooking(true)
+        try {
             // Build note with pricing info
             let bookingNoteText = bookingNote
             if (selectedService) {
-                // Booking with selected service price
                 bookingNoteText = bookingNote
                     ? `${selectedService.name} - ₹${selectedService.price}/${selectedService.unit}\n${bookingNote}`
                     : `${selectedService.name} - ₹${selectedService.price}/${selectedService.unit}`
             } else if (provider.basePrice) {
-                // Booking at base price (no service menu)
                 bookingNoteText = bookingNote
                     ? `Base Service - ₹${provider.basePrice}\n${bookingNote}`
                     : `Base Service - ₹${provider.basePrice}`
+            }
+
+            if (paymentId) {
+                bookingNoteText += `\n[Payment ID: ${paymentId}]`
+            } else if (paymentMethod === 'CASH') {
+                bookingNoteText += `\n[Payment Method: Cash to Provider]`
+            }
+
+            if (!userId || !provider) {
+                toast.error("Missing user or provider information");
+                return;
             }
 
             await bookingService.createBooking(userId, {
                 providerId: provider.userId,
                 serviceType: provider.serviceType,
                 note: bookingNoteText,
+                paymentIntentId: paymentId,
             })
             toast.success('Booking request sent successfully!')
             setBookingNote('')
             setSelectedService(null)
+            setShowPayment(false)
+            setClientSecret(null)
             onClose()
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to create booking')
@@ -307,48 +379,111 @@ export const ProviderDetailModal = ({
                     <div className="border-t pt-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Book This Provider</h3>
 
-                        {/* Selected Service Summary */}
-                        {selectedService && (
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-semibold text-gray-900">{selectedService.name}</div>
-                                        <div className="text-sm text-gray-600">{selectedService.description}</div>
+                        {/* Payment Modal/Section */}
+                        {showPayment && clientSecret ? (
+                            <div className="bg-gray-50 p-4 rounded-lg border mb-4">
+                                <h4 className="font-semibold mb-2">Complete Payment</h4>
+                                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                                    <PaymentForm
+                                        amount={paymentAmount}
+                                        onSuccess={(paymentId) => completeBooking(paymentId)}
+                                        onCancel={() => setShowPayment(false)}
+                                    />
+                                </Elements>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Selected Service Summary */}
+                                {selectedService && (
+                                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="font-semibold text-gray-900">{selectedService.name}</div>
+                                                <div className="text-sm text-gray-600">{selectedService.description}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-2xl font-bold text-blue-600">₹{selectedService.price}</div>
+                                                <div className="text-sm text-gray-600">per {selectedService.unit}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-blue-600">₹{selectedService.price}</div>
-                                        <div className="text-sm text-gray-600">per {selectedService.unit}</div>
+                                )}
+
+                                <Textarea
+                                    label="Additional Notes (Optional)"
+                                    value={bookingNote}
+                                    onChange={(e) => setBookingNote(e.target.value)}
+                                    placeholder="Any special requirements or details about the job..."
+                                    rows={3}
+                                />
+
+                                {/* Payment Method Selection */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                    <div className="flex gap-4">
+                                        <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'ONLINE'
+                                            ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="ONLINE"
+                                                checked={paymentMethod === 'ONLINE'}
+                                                onChange={() => setPaymentMethod('ONLINE')}
+                                                className="sr-only"
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <DollarSignIcon size={18} />
+                                                <span className="font-medium">Pay Online</span>
+                                            </div>
+                                        </label>
+
+                                        <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'CASH'
+                                            ? 'border-green-600 bg-green-50 text-green-700'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="CASH"
+                                                checked={paymentMethod === 'CASH'}
+                                                onChange={() => setPaymentMethod('CASH')}
+                                                className="sr-only"
+                                            />
+                                            <div className="flex items-center gap-2">
+                                                <DollarSignIcon size={18} />
+                                                <span className="font-medium">Cash to Provider</span>
+                                            </div>
+                                        </label>
                                     </div>
                                 </div>
-                            </div>
-                        )}
 
-                        <Textarea
-                            label="Additional Notes (Optional)"
-                            value={bookingNote}
-                            onChange={(e) => setBookingNote(e.target.value)}
-                            placeholder="Any special requirements or details about the job..."
-                            rows={3}
-                        />
-                        <div className="flex gap-3 mt-4">
-                            <Button variant="outline" className="flex-1" onClick={onClose}>
-                                Close
-                            </Button>
-                            <Button
-                                className="flex-1"
-                                onClick={handleBookService}
-                                disabled={!provider.isAvailable || isBooking || (serviceOfferings.length > 0 && !selectedService)}
-                                isLoading={isBooking}
-                            >
-                                {!provider.isAvailable
-                                    ? 'Provider Offline'
-                                    : serviceOfferings.length > 0 && !selectedService
-                                        ? 'Select a Service'
-                                        : selectedService
-                                            ? `Book ${selectedService.name} - ₹${selectedService.price}`
-                                            : `Book Service - ₹${provider.basePrice || 'TBD'}`}
-                            </Button>
-                        </div>
+                                <div className="flex gap-3 mt-4">
+                                    <Button variant="outline" className="flex-1" onClick={onClose}>
+                                        Close
+                                    </Button>
+                                    <Button
+                                        className="flex-1"
+                                        onClick={handleInitiateBooking}
+                                        disabled={!provider.isAvailable || isBooking || (serviceOfferings.length > 0 && !selectedService)}
+                                        isLoading={isBooking}
+                                    >
+                                        {!provider.isAvailable
+                                            ? 'Provider Offline'
+                                            : serviceOfferings.length > 0 && !selectedService
+                                                ? 'Select a Service'
+                                                : selectedService
+                                                    ? paymentMethod === 'CASH'
+                                                        ? `Book with Cash - ₹${selectedService.price}`
+                                                        : `Pay & Book - ₹${selectedService.price}`
+                                                    : paymentMethod === 'CASH'
+                                                        ? `Book with Cash - ₹${provider.basePrice || 'TBD'}`
+                                                        : `Pay & Book - ₹${provider.basePrice || 'TBD'}`}
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useChat } from '../contexts/ChatContext'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import { Booking, ProviderProfile } from '../types'
-import { Loader } from '../components/ui/Loader'
+import { TrackingPageSkeleton } from '../components/ui/Loader'
 import { Button } from '../components/ui/Button'
 import { MapPinIcon, PhoneIcon } from '../components/icons/CustomIcons'
 import toast from 'react-hot-toast'
@@ -17,9 +18,10 @@ declare global {
 }
 
 export const ActiveJobPage = () => {
-    const { id } = useParams()
+    const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { user } = useAuth()
+    const { openChat } = useChat()
     const [booking, setBooking] = useState<Booking | null>(null)
     const [providerProfile, setProviderProfile] = useState<ProviderProfile | null>(null)
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -119,15 +121,63 @@ export const ActiveJobPage = () => {
     }
 
     const geocodeAddress = async (address: string) => {
+        const cacheKey = `geo_cache_${address}`
+        const cached = localStorage.getItem(cacheKey)
+        if (cached) {
+            try {
+                const { lat, lng } = JSON.parse(cached)
+                setUserLocation({ lat, lng })
+                return
+            } catch (e) {
+                localStorage.removeItem(cacheKey)
+            }
+        }
+
         try {
-            const response = await fetch(
+            // 1. Try full address
+            let response = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
                 { headers: { 'User-Agent': 'QuickFix/1.0' } }
             )
-            const data = await response.json()
+            let data = await response.json()
             if (data.length > 0) {
-                setUserLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) })
+                const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+                setUserLocation(coords)
+                localStorage.setItem(cacheKey, JSON.stringify(coords))
+                return
             }
+
+            // 2. Fallback: Try simplified address
+            const parts = address.split(',')
+            if (parts.length > 1) {
+                const fallbackAddress = parts.slice(Math.max(parts.length - 3, 0)).join(',').trim()
+                console.log('Geocoding fallback to:', fallbackAddress)
+
+                // Check cache for fallback
+                const fallbackCacheKey = `geo_cache_${fallbackAddress}`
+                const fallbackCached = localStorage.getItem(fallbackCacheKey)
+                if (fallbackCached) {
+                    const { lat, lng } = JSON.parse(fallbackCached)
+                    setUserLocation({ lat, lng })
+                    return
+                }
+
+                response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackAddress)}&limit=1`,
+                    { headers: { 'User-Agent': 'QuickFix/1.0' } }
+                )
+                data = await response.json()
+                if (data.length > 0) {
+                    const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+                    setUserLocation(coords)
+                    localStorage.setItem(cacheKey, JSON.stringify(coords))
+                    localStorage.setItem(fallbackCacheKey, JSON.stringify(coords))
+                    return
+                }
+            }
+
+            console.warn('Geocoding failed for:', address)
+            toast.error('Could not find location on map')
         } catch (e) {
             console.error('Geocoding error', e)
         }
@@ -212,19 +262,7 @@ export const ActiveJobPage = () => {
     }
 
     const handleInitiateStartJob = async () => {
-        if (booking?.note === 'Multiple Booking Package') {
-            try {
-                // For package deals, backend skips OTP check
-                await bookingService.startService(booking.id, "SKIP")
-                toast.success('Service Started!')
-                fetchData()
-                navigate('/dashboard')
-            } catch (error) {
-                toast.error('Failed to start package job')
-            }
-        } else {
-            setShowOtpInput(true)
-        }
+        setShowOtpInput(true)
     }
 
     const handleStartJob = async () => {
@@ -249,7 +287,7 @@ export const ActiveJobPage = () => {
         }
     }
 
-    if (isLoading || !booking) return <div className="flex justify-center p-10"><Loader size="lg" /></div>
+    if (isLoading || !booking) return <TrackingPageSkeleton />
 
     return (
         <div className="container mx-auto px-4 py-8 h-[calc(100vh-80px)]">
@@ -337,6 +375,14 @@ export const ActiveJobPage = () => {
                                 Complete Job
                             </Button>
                         ) : null}
+
+                        <button
+                            onClick={() => openChat(booking.user.id, booking.user.name)}
+                            className="mt-3 block w-full text-center py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined">chat</span>
+                            Message Customer
+                        </button>
 
                         {userLocation && providerProfile?.locationLat && (
                             <a

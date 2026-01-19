@@ -4,7 +4,7 @@ import { adminService } from '../services/adminService'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Textarea } from '../components/ui/Textarea'
-import { Loader } from '../components/ui/Loader'
+import { PageLoadingSkeleton } from '../components/ui/Loader'
 import { ArrowLeftIcon, CheckIcon, XCircleIcon } from '../components/icons/CustomIcons'
 import type { ProviderProfile } from '../types'
 
@@ -71,11 +71,7 @@ export const ProviderReviewDetail = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <PageLoadingSkeleton />
   }
 
   if (error) {

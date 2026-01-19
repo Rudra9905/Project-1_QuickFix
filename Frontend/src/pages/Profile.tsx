@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Avatar } from '../components/ui/Avatar'
 import { useNavigate } from 'react-router-dom'
 import { providerService } from '../services/providerService'
-import { Loader } from '../components/ui/Loader'
+import { ProfileSkeleton } from '../components/ui/Loader'
 import {
   PhoneIcon,
   LogOutIcon,
@@ -376,11 +376,7 @@ const ProviderProfileView = () => {
   if (!user) return null
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <ProfileSkeleton />
   }
 
   return (
@@ -575,6 +571,55 @@ const ProviderProfileView = () => {
                 </div>
               </div>
             </div>
+            <div className="pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-text-primary">Payout Settings</h3>
+                  <p className="text-xs text-text-secondary">
+                    {profile?.stripeAccountId
+                      ? 'Your account is connected to Stripe for payouts.'
+                      : 'Connect with Stripe to receive payments directly to your bank account.'}
+                  </p>
+                </div>
+                {profile?.stripeAccountId ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100">
+                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                    <span className="text-sm font-medium">Payouts Enabled</span>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="bg-[#635BFF] hover:bg-[#5851df] text-white" // Stripe blurple color
+                    onClick={async () => {
+                      if (!profile || !user) return;
+                      try {
+                        // Use current URL as base for refresh/return
+                        const returnUrl = window.location.href;
+                        const refreshUrl = window.location.href;
+
+                        // Get token from auth context or local storage? 
+                        // Hook useAuth usually provides token, but if not we can get it from localStorage or api 
+                        // Assuming api handles token injection or we get it from local storage
+                        const token = localStorage.getItem('token') || '';
+
+                        const { url } = await import('../api').then(m => m.paymentApi.onboardProvider(profile.id, refreshUrl, returnUrl, token));
+
+                        if (url) {
+                          window.location.href = url;
+                        }
+                      } catch (error) {
+                        console.error('Failed to start onboarding', error);
+                        toast.error('Failed to start setup. Please try again.');
+                      }
+                    }}
+                  >
+                    Setup Payouts
+                    <span className="material-symbols-outlined text-sm ml-2">open_in_new</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+
           </CardContent>
         </Card>
 

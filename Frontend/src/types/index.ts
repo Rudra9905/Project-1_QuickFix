@@ -68,10 +68,10 @@ export interface ProviderProfile {
   displayName?: string // Provider's display/business name
   profilePhotoUrl?: string // Profile photo URL
   tagline?: string // Professional tagline
-  user?: { // Optional user info for display
-    name: string
-    city?: string
-  }
+  name: string
+  city?: string
+  stripeAccountId?: string // Stripe Connect Account ID
+  payoutsEnabled?: boolean // Whether payouts are enabled
 }
 
 
@@ -132,6 +132,7 @@ export interface BookingRequest {
   bookingDate?: string // Optional preferred date for the service (ISO format)
   preferredTime?: string // Optional preferred time for the service
   multipleBooking?: boolean // Flag to indicate if this is part of a multiple booking batch (includes Weekly)
+  paymentIntentId?: string | null // Stripe Payment Intent ID
 }
 
 // Review interface: represents a customer review for a completed booking

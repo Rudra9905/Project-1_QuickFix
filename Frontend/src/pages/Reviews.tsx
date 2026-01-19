@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Textarea } from '../components/ui/Textarea'
-import { Loader } from '../components/ui/Loader'
+import { ReviewsSkeleton } from '../components/ui/Loader'
 import { Modal } from '../components/ui/Modal'
 import { reviewService } from '../services/reviewService'
 import { bookingService } from '../services/bookingService'
@@ -80,11 +80,7 @@ export const Reviews = () => {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <ReviewsSkeleton />
   }
 
   if (user?.role === 'PROVIDER') {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Loader } from '../components/ui/Loader'
+import { useNotifications } from '../contexts/NotificationContext'
+import { DashboardSkeleton } from '../components/ui/Loader'
 import { bookingService } from '../services/bookingService'
 import type { Booking } from '../types'
 import { isToday } from 'date-fns'
@@ -56,6 +57,52 @@ export const Dashboard = () => {
 
     fetchData()
   }, [user])
+  
+  /* Auto-refresh on booking-related notifications */
+  const { notifications } = useNotifications()
+  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<number | null>(null)
+  
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0]
+      // Check if this is a new notification we haven't processed yet
+      if (latest.id !== lastProcessedNotificationId) {
+        // Check if it's a booking-related notification
+        const isBookingRelated = latest.title.toLowerCase().includes('booking') ||
+          latest.message.toLowerCase().includes('booking') ||
+          latest.message.toLowerCase().includes('job') ||
+          latest.title.toLowerCase().includes('request') ||
+          latest.title.toLowerCase().includes('accepted') ||
+          latest.title.toLowerCase().includes('rejected') ||
+          latest.title.toLowerCase().includes('cancelled') ||
+          latest.title.toLowerCase().includes('completed')
+        
+        if (isBookingRelated) {
+          console.log('New booking notification received, refreshing dashboard...', latest.id)
+          const fetchData = async () => {
+            if (!user) return
+            try {
+              if (user.role === 'USER') {
+                const bookings = await bookingService.getBookingsByUser(user.id)
+                
+                // Find active booking (ACCEPTED or IN_PROGRESS status)
+                // Prioritize IN_PROGRESS, then check for ACCEPTED bookings that are for TODAY
+                const active = bookings.find(b =>
+                  b.status === 'IN_PROGRESS' ||
+                  (b.status === 'ACCEPTED' && isToday(new Date(b.bookingDate || b.createdAt)))
+                )
+                setActiveBooking(active || null)
+              }
+            } catch (error) {
+              console.error('Failed to fetch data:', error)
+            }
+          }
+          fetchData()
+          setLastProcessedNotificationId(latest.id)
+        }
+      }
+    }
+  }, [notifications])
 
   const getStatusText = () => {
     if (!activeBooking) return 'No active service'
@@ -81,11 +128,7 @@ export const Dashboard = () => {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (user?.role === 'PROVIDER') {

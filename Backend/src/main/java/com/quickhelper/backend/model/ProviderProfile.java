@@ -9,13 +9,18 @@ import com.quickhelper.backend.model.ProfileStatus;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @Entity
 @Table(name = "provider_profiles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 // Additional profile data for provider accounts
-public class ProviderProfile {
+public class ProviderProfile implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -73,6 +78,12 @@ public class ProviderProfile {
     
     @Column(name = "tagline")
     private String tagline; // Professional tagline
+
+    @Column(name = "stripe_account_id")
+    private String stripeAccountId; // Stripe Connect Account ID
+
+    @Column(name = "payouts_enabled")
+    private Boolean payoutsEnabled = false; // Whether payouts are active
 
     @ElementCollection
     @CollectionTable(name = "provider_portfolio_images", joinColumns = @JoinColumn(name = "provider_profile_id"))

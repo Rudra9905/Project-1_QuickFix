@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@stomp/stompjs": "^7.2.1",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.6.1",
     "axios": "^1.7.2",
     "date-fns": "^2.30.0",
     "lucide-react": "^0.427.0",
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/sockjs-client": "^1.5.4",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "@vitejs/plugin-react": "^5.1.2",

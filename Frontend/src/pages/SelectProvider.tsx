@@ -4,7 +4,7 @@ import { Card, CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Select } from '../components/ui/Select'
-import { Loader } from '../components/ui/Loader'
+import { SelectProviderSkeleton } from '../components/ui/Loader'
 import { PrebookModal } from '../components/PrebookModal'
 import { providerService } from '../services/providerService'
 import { bookingService } from '../services/bookingService'
@@ -286,11 +286,7 @@ export const SelectProvider = () => {
   }
 
   if (isLoading || !isLocationChecked) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <SelectProviderSkeleton />
   }
 
   return (

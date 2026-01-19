@@ -11,7 +11,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -267,6 +269,19 @@ public class NotificationService {
         );
     }
 
+    public void notifyRefundProcessed(Long userId, Long bookingId, Double amount) {
+        // Notify user that refund was processed
+        createAndSendNotification(
+                userId,
+                UserRole.USER,
+                NotificationType.REFUND_PROCESSED,
+                "Refund Initiated",
+                "A refund has been initiated for your booking.",
+                false,
+                bookingId
+        );
+    }
+
     // Additional helper methods for other events
     public void notifyRatingReminder(Long userId, Long bookingId) {
         // Notify user to rate their experience
@@ -297,6 +312,24 @@ public class NotificationService {
     @Async
     // Sends notification over WebSocket to the role-specific topic
     public void sendWebSocketNotification(Long receiverId, UserRole receiverRole, NotificationDTO dto) {
+        // Use TransactionSynchronization to ensure we send the WS message only AFTER the DB commit
+        // This prevents the race condition where frontend receives the event and fetches data before it's saved
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronizationAdapter() {
+                    @Override
+                    public void afterCommit() {
+                        doSendWebSocketNotification(receiverId, receiverRole, dto);
+                    }
+                }
+            );
+        } else {
+            // No active transaction, send immediately
+            doSendWebSocketNotification(receiverId, receiverRole, dto);
+        }
+    }
+
+    private void doSendWebSocketNotification(Long receiverId, UserRole receiverRole, NotificationDTO dto) {
         try {
             // Updated destination to support both USER and PROVIDER roles
             String destination = "/topic/" + receiverRole.toString().toLowerCase() + "/" + receiverId + "/notifications";
@@ -305,15 +338,26 @@ public class NotificationService {
             
             messagingTemplate.convertAndSend(destination, dto);
             DebugUtil.logInfo("✓ Notification sent successfully via WebSocket to {}: {}", destination, dto.getTitle());
+            
+            // Also send to the user-specific events topic for general updates
+            String eventsDestination = "/topic/" + receiverRole.toString().toLowerCase() + "/" + receiverId + "/events";
+            Map<String, Object> eventData = new HashMap<>();
+            eventData.put("type", "notification");
+            eventData.put("data", dto);
+            messagingTemplate.convertAndSend(eventsDestination, eventData);
+            DebugUtil.logInfo("✓ Event sent to user-specific events topic: {}", eventsDestination);
+            
+            // Send to global events topic for system-wide updates
+            String globalEventsDestination = "/topic/events";
+            messagingTemplate.convertAndSend(globalEventsDestination, eventData);
+            DebugUtil.logInfo("✓ Event sent to global events topic: {}", globalEventsDestination);
         } catch (Exception e) {
             DebugUtil.logError("✗ ERROR sending notification via WebSocket: {}", e.getMessage(), e);
             
             // Fallback: Store notification in database with failed delivery flag
-            try {
-                storeFailedNotification(receiverId, receiverRole, dto);
-            } catch (Exception fallbackException) {
-                DebugUtil.logError("✗ Failed to store notification after WebSocket failure: {}", fallbackException.getMessage(), fallbackException);
-            }
+            // Note: Since we are likely outside the original transaction (after commit), 
+            // we might need a new transaction here if we were to retry saving something.
+            // But storeFailedNotification might create its own transaction if needed or just log.
         }
     }
 

@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+// import { useAuth } from '../contexts/AuthContext' - removed
+import { useNotifications } from '../contexts/NotificationContext'
 import { Button } from '../components/ui/Button'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import toast from 'react-hot-toast'
+import { ProviderDashboardSkeleton } from '../components/ui/Loader'
 import type { Booking, ProviderProfile, User } from '../types'
 import {
   ClockIcon,
-  UserIcon,
   CleaningIcon,
   PlumbingIcon,
   LightningIcon,
-  MapPinIcon,
-  PhoneIcon,
-  MessageIcon,
-  NavigationIcon,
   CalendarIcon,
 } from '../components/icons/CustomIcons'
 import { format, parseISO, isToday, min, max } from 'date-fns'
@@ -58,11 +55,29 @@ const extractPriceFromNote = (note?: string): number | null => {
 
 export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   const navigate = useNavigate()
-  const { user: authUser } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
+  /* Timer State */
+  const [currentDate, setCurrentDate] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentDate(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const getRemainingTime = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const expiresAt = new Date(created.getTime() + 5 * 60 * 1000) // 5 minutes
+    const diff = expiresAt.getTime() - currentDate.getTime()
+
+    if (diff <= 0) return null
+
+    const minutes = Math.floor(diff / 60000)
+    const seconds = Math.floor((diff % 60000) / 1000)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
   const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [providerProfile, setProviderProfile] = useState<ProviderProfile | null>(null)
+  const [loading, setLoading] = useState(true)
   const [activeJobTab, setActiveJobTab] = useState<JobTab>('nearby')
   /* Persist dismissed alerts */
   const [dismissedAlertIds, setDismissedAlertIds] = useState<number[]>(() => {
@@ -79,14 +94,53 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
 
   useEffect(() => {
-    fetchData(true)
+    fetchData()
+
+    // Poll for updates every 30 seconds to keep list fresh (e.g. handle auto-expired)
+    const interval = setInterval(() => {
+      fetchData()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [user.id])
 
-  const fetchData = async (showLoader = false) => {
-    try {
-      if (showLoader) {
-        setIsLoading(true)
+  /* Auto-refresh Logic */
+  const { notifications } = useNotifications()
+  const [lastProcessedId, setLastProcessedId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0]
+      if (latest.id !== lastProcessedId) {
+        // Check for relevant notification types that should trigger a refresh
+        const JOB_REFRESH_TYPES = [
+          'NEW_BOOKING_REQUEST',
+          'BOOKING_CANCELLED',
+          'JOB_ACCEPTED',
+          'JOB_COMPLETED',
+          'EARNINGS_CREDITED',
+          // Include user types that might be relevant if roles overlap or just in case
+          'BOOKING_ACCEPTED',
+          'BOOKING_REJECTED'
+        ];
+
+        // Also check legacy string matching as fallback
+        const isJobRelated = JOB_REFRESH_TYPES.includes(latest.type) ||
+          latest.title.toLowerCase().includes('booking') ||
+          latest.message.toLowerCase().includes('job');
+
+        if (isJobRelated) {
+          console.log(`Real-time update received (Type: ${latest.type}), refreshing dashboard...`, latest.id)
+          fetchData() // Refresh without full loader to be less intrusive
+          setLastProcessedId(latest.id)
+        }
       }
+    }
+  }, [notifications])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
       const [bookingsData, providerData] = await Promise.all([
         bookingService.getBookingsByProvider(user.id),
         providerService.getProviderByUserId(user.id),
@@ -98,9 +152,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
       console.error('Failed to fetch data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
-      if (showLoader) {
-        setIsLoading(false)
-      }
+      setLoading(false)
     }
   }
 
@@ -334,18 +386,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     return 30 + variable
   }
 
-  // Get in-progress job (ACCEPTED status)
-  const inProgressJob = bookings.find(b => b.status === 'IN_PROGRESS')
-
-  // Calculate time elapsed for in-progress job
-  const getTimeElapsed = (booking: Booking) => {
-    if (!booking.acceptedAt) return '0m'
-    const elapsed = Date.now() - new Date(booking.acceptedAt).getTime()
-    const minutes = Math.floor(elapsed / (1000 * 60))
-    if (minutes < 60) return `${minutes}m`
-    const hours = Math.floor(minutes / 60)
-    return `${hours}h ${minutes % 60}m`
-  }
+  // Unused helper removed
 
 
 
@@ -360,6 +401,9 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     const price = extractPriceFromNote(booking.note) || providerProfile?.basePrice
     const distance = calculateDistanceKm(booking)
     const estimatedMinutes = estimateDurationMinutes(booking)
+
+    // Timer for pending single bookings
+    const remainingTime = !isGroup && booking.status === 'REQUESTED' ? getRemainingTime(booking.createdAt) : null
 
     // Dynamic Styles based on Service Color
     const borderColor = isGroup ? serviceInfo.color : '#e2e8f0' // slate-200
@@ -388,20 +432,21 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
         )}
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 pl-2">
-          <div className="flex gap-4">
+          {/* Left Content */}
+          <div className="flex gap-4 flex-1 min-w-0 pr-2">
             <div
               className="size-14 rounded-2xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${serviceInfo.color}15` }}
             >
               <ServiceIcon size={24} color={serviceInfo.color} />
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-text-dark text-lg">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="font-bold text-text-dark text-lg whitespace-nowrap">
                   {serviceInfo.label}
                 </h3>
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
                   style={{
                     backgroundColor: `${serviceInfo.color}15`,
                     color: serviceInfo.color
@@ -411,17 +456,26 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
                 </span>
                 {isGroup && (
                   <span
-                    className="text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
+                    className="text-white text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap"
                     style={{ backgroundColor: badgeColor }}
                   >
                     Package ({group!.bookings.length})
                   </span>
                 )}
+                {/* Timer Badge */}
+                {remainingTime && (
+                  <span className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse">
+                    <span className="material-symbols-outlined text-[14px]">timer</span>
+                    {remainingTime}
+                  </span>
+                )}
               </div>
 
-              <p className="text-sm text-text-muted flex items-center gap-1 mb-2">
-                <span className="material-symbols-outlined text-base">location_on</span>
-                {distance != null ? `${distance} km away` : booking.user.city ? `In ${booking.user.city}` : 'Location pending'} • {booking.user.city || 'Address pending'}
+              <p className="text-sm text-text-muted flex items-center gap-1 mb-2 truncate">
+                <span className="material-symbols-outlined text-base shrink-0">location_on</span>
+                <span className="truncate">
+                  {distance != null ? `${distance} km away` : booking.user.city ? `In ${booking.user.city}` : 'Location pending'} • {booking.user.city || 'Address pending'}
+                </span>
               </p>
 
               {/* Customer Contact - Only visible if Accepted or In Progress */}
@@ -459,13 +513,13 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
                 </div>
               )}
 
-              <p className="text-sm text-text-dark line-clamp-2">
+              <p className="text-sm text-text-dark line-clamp-2 break-words">
                 {booking.note || 'No additional details provided.'}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-end justify-between gap-4 min-w-[120px]">
+          <div className="flex flex-col items-end justify-between gap-4 min-w-[140px] shrink-0">
             <div className="text-right">
               <p className="text-lg font-bold" style={{ color: serviceInfo.color }}>
                 {isGroup ? 'Package Deal' : (price != null ? `₹${price.toLocaleString()}` : 'Not set')}
@@ -480,13 +534,19 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
                 <>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <button
-                      onClick={() => isGroup ? handleBatchReject(group!.bookings.map(b => b.id)) : handleReject(booking.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        isGroup ? handleBatchReject(group!.bookings.map(b => b.id)) : handleReject(booking.id)
+                      }}
                       className="flex-1 sm:flex-none py-2 px-4 rounded-xl border border-slate-200 text-sm font-medium text-text-muted hover:bg-surface transition-colors"
                     >
-                      Decline {isGroup && 'All'}
+                      Decline
                     </button>
                     <button
-                      onClick={() => isGroup ? handleBatchAccept(group!.bookings.map(b => b.id)) : handleAccept(booking.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        isGroup ? handleBatchAccept(group!.bookings.map(b => b.id)) : handleAccept(booking.id)
+                      }}
                       className={`flex-1 sm:flex-none py-2 px-4 rounded-xl text-sm font-medium text-white transition-colors shadow-lg shadow-primary/20`}
                       style={{ backgroundColor: serviceInfo.color }}>
                       Accept {isGroup ? 'All' : ''}
@@ -496,6 +556,25 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
               </div>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('Are you sure you want to cancel this job? This will trigger a full refund to the user.')) {
+                      bookingService.cancelBooking(booking.id)
+                        .then(() => {
+                          toast.success('Job cancelled and refunded')
+                          fetchData()
+                        })
+                        .catch((err) => {
+                          console.error(err)
+                          toast.error('Failed to cancel job')
+                        })
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+                >
+                  Cancel
+                </button>
                 {(!booking.startedAt && booking.status === 'IN_PROGRESS') || booking.status === 'ACCEPTED' ? (
                   isGroup ? (
                     <button
@@ -544,6 +623,10 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   // ... (Rest of component) ...
 
   const firstName = user.name.split(' ')[0]
+
+  if (loading) {
+    return <ProviderDashboardSkeleton />
+  }
 
   return (
     <div className="flex flex-col gap-8">

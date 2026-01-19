@@ -13,6 +13,7 @@ public enum NotificationType {
     SERVICE_COMPLETED,
     PAYMENT_CONFIRMED,
     RATING_REMINDER,
+    REFUND_PROCESSED,
     
     // Provider notifications
     NEW_BOOKING_REQUEST,

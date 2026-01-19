@@ -98,4 +98,11 @@ public class BookingController {
         BookingResponseDTO booking = bookingService.confirmPayment(bookingId);
         return ResponseEntity.ok(booking);
     }
+
+    @PostMapping("/trigger-expiration")
+    // Manual endpoint to trigger booking expiration (for testing)
+    public ResponseEntity<String> triggerExpiration() {
+        bookingService.scanAndRejectExpiredBookings();
+        return ResponseEntity.ok("Expiration check triggered");
+    }
 }

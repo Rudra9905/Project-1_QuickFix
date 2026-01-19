@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import { Booking, ProviderProfile } from '../types'
-import { Loader } from '../components/ui/Loader'
+import { TrackingPageSkeleton } from '../components/ui/Loader'
 import { Button } from '../components/ui/Button'
 import { MapPinIcon, PhoneIcon, NavigationIcon } from '../components/icons/CustomIcons'
 import toast from 'react-hot-toast'
@@ -36,6 +37,38 @@ export const TrackServicePage = () => {
             fetchData()
         }
     }, [bookingId])
+    
+    /* Auto-refresh on booking-related notifications */
+    const { notifications } = useNotifications()
+    const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<number | null>(null)
+    
+    useEffect(() => {
+        if (notifications.length > 0) {
+            const latest = notifications[0]
+            // Check if this is a new notification we haven't processed yet
+            if (latest.id !== lastProcessedNotificationId) {
+                // Check if it's a booking-related notification for this specific booking
+                const isBookingRelated = (latest.title.toLowerCase().includes('booking') ||
+                    latest.message.toLowerCase().includes('booking') ||
+                    latest.message.toLowerCase().includes('job') ||
+                    latest.title.toLowerCase().includes('request') ||
+                    latest.title.toLowerCase().includes('accepted') ||
+                    latest.title.toLowerCase().includes('rejected') ||
+                    latest.title.toLowerCase().includes('cancelled') ||
+                    latest.title.toLowerCase().includes('completed') ||
+                    latest.title.toLowerCase().includes('on the way') ||
+                    latest.title.toLowerCase().includes('arrived') ||
+                    latest.title.toLowerCase().includes('started')) &&
+                    latest.relatedBookingId === Number(bookingId); // Only for this specific booking
+                
+                if (isBookingRelated) {
+                    console.log('New booking notification received for this booking, refreshing...', latest.id)
+                    fetchData()
+                    setLastProcessedNotificationId(latest.id)
+                }
+            }
+        }
+    }, [notifications, bookingId])
 
     useEffect(() => {
         // Load Leaflet resources
@@ -210,7 +243,7 @@ export const TrackServicePage = () => {
         mapInstanceRef.current = map
     }
 
-    if (isLoading || !booking) return <div className="flex justify-center p-10"><Loader size="lg" /></div>
+    if (isLoading || !booking) return <TrackingPageSkeleton />
 
     return (
         <div className="container mx-auto px-4 py-8 h-[calc(100vh-80px)]">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { Loader } from '../components/ui/Loader'
+import { EarningsSkeleton } from '../components/ui/Loader'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import { format, parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns'
@@ -110,11 +110,7 @@ const Earnings = () => {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <EarningsSkeleton />
   }
 
   const recentEarnings = bookings

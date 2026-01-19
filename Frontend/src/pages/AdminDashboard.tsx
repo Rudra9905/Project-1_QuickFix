@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { adminService } from '../services/adminService'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { Loader } from '../components/ui/Loader'
+import { PageLoadingSkeleton } from '../components/ui/Loader'
 import { EyeIcon, CheckIcon, XCircleIcon } from '../components/icons/CustomIcons'
 import type { ProviderProfile } from '../types'
 
@@ -35,11 +35,7 @@ export const AdminDashboard = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <PageLoadingSkeleton />
   }
 
   if (error) {

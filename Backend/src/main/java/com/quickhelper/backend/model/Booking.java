@@ -19,11 +19,11 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // Customer who created the booking
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "provider_id", nullable = false)
     private User provider; // Provider assigned to fulfill the booking
 
@@ -62,4 +62,7 @@ public class Booking {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt; // When job finished
+
+    @Column(name = "payment_intent_id")
+    private String paymentIntentId; // Stripe Payment Intent ID for refunds
 }

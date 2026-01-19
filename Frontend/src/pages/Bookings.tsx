@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '../components/ui/Card'
-import { Loader } from '../components/ui/Loader'
+import { BookingsSkeleton } from '../components/ui/Loader'
 import { bookingService } from '../services/bookingService'
 import { providerService } from '../services/providerService'
 import { useAuth } from '../contexts/AuthContext'
+import { useChat } from '../contexts/ChatContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import toast from 'react-hot-toast'
 import type { Booking, BookingStatus, ServiceType, ProviderProfile, User } from '../types'
 import {
@@ -31,7 +33,7 @@ const SERVICE_MAPPING: Record<ServiceType, { label: string; icon: any; color: st
 const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: string }> = {
   REQUESTED: { label: 'Scheduled', bg: '#F3F4F6', text: '#6B7280' },
   ACCEPTED: { label: 'In Progress', bg: '#DBEAFE', text: '#2563EB' },
-  REJECTED: { label: 'Cancelled', bg: '#FEE2E2', text: '#DC2626' },
+  REJECTED: { label: 'Declined', bg: '#FEE2E2', text: '#DC2626' },
   CANCELLED: { label: 'Cancelled', bg: '#FEE2E2', text: '#DC2626' },
   COMPLETED: { label: 'Completed', bg: '#D1FAE5', text: '#16A34A' },
   IN_PROGRESS: { label: 'In Progress', bg: '#DBEAFE', text: '#2563EB' },
@@ -141,10 +143,45 @@ interface BookingGroup {
 
 export const Bookings = () => {
   const { user } = useAuth()
+  const { openChat } = useChat()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [providerProfiles, setProviderProfiles] = useState<ProviderProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
+
+  /* Auto-refresh on new notification */
+  const { notifications } = useNotifications()
+  // Store the ID of the last processed notification to prevent infinite loops or redundant fetches
+  const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0]
+      // Check if this is a new notification we haven't processed yet
+      if (latest.id !== lastProcessedNotificationId) {
+        // Check if it's a booking-related notification
+        const isBookingRelated = latest.title.toLowerCase().includes('booking') ||
+          latest.message.toLowerCase().includes('booking') ||
+          latest.message.toLowerCase().includes('job') ||
+          latest.title.toLowerCase().includes('request') ||
+          latest.title.toLowerCase().includes('accepted') ||
+          latest.title.toLowerCase().includes('rejected') ||
+          latest.title.toLowerCase().includes('cancelled') ||
+          latest.title.toLowerCase().includes('completed') ||
+          latest.title.toLowerCase().includes('on the way') ||
+          latest.title.toLowerCase().includes('arrived') ||
+          latest.title.toLowerCase().includes('started') ||
+          latest.title.toLowerCase().includes('provider') ||
+          latest.title.toLowerCase().includes('customer');
+
+        if (isBookingRelated) {
+          console.log('New booking notification received, refreshing list...', latest.id)
+          fetchBookings()
+          setLastProcessedNotificationId(latest.id)
+        }
+      }
+    }
+  }, [notifications])
 
   useEffect(() => {
     fetchBookings()
@@ -311,11 +348,7 @@ export const Bookings = () => {
 
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <BookingsSkeleton />
   }
 
   // Render Helper
@@ -389,11 +422,28 @@ export const Bookings = () => {
                       {booking.provider?.name || (isGroup ? group!.provider?.name : 'Assigning provider...')}
                     </div>
                     {/* OTP Display for User - Only visible to Customers */}
-                    {user?.role === 'USER' && booking.status === 'ACCEPTED' && booking.startJobOtp && (
-                      <div className="mt-2 text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg inline-block">
-                        <span className="font-semibold text-blue-800">Start OTP: {booking.startJobOtp}</span>
-                        <span className="block text-xs text-blue-600 mt-1">Share with provider on arrival</span>
-                      </div>
+                    {user?.role === 'USER' && (
+                      isGroup ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {group!.bookings.map(b => (
+                            (b.status === 'ACCEPTED' && b.startJobOtp) && (
+                              <div key={b.id} className="text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg flex flex-col min-w-[120px]">
+                                <span className="text-xs text-blue-600 mb-1 font-medium">
+                                  {b.bookingDate ? format(parseISO(b.bookingDate.toString()), 'MMM d') : 'Date TBD'}
+                                </span>
+                                <span className="font-bold text-blue-800 tracking-wide">OTP: {b.startJobOtp}</span>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      ) : (
+                        booking.status === 'ACCEPTED' && booking.startJobOtp && (
+                          <div className="mt-2 text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg inline-block">
+                            <span className="font-semibold text-blue-800">Start OTP: {booking.startJobOtp}</span>
+                            <span className="block text-xs text-blue-600 mt-1">Share with provider on arrival</span>
+                          </div>
+                        )
+                      )
                     )}
                     {(booking.note || isGroup) && (
                       <div className="flex items-center gap-2 text-sm text-text-secondary mt-2 bg-gray-50 p-2 rounded">
@@ -430,7 +480,7 @@ export const Bookings = () => {
                     className="px-3 py-1 rounded-full text-xs font-medium"
                     style={{ backgroundColor: statusInfo.bg, color: statusInfo.text }}
                   >
-                    {statusInfo.label}
+                    {booking.status === 'REJECTED' && booking.note?.includes('Auto-rejected') ? 'Expired' : statusInfo.label}
                   </div>
                   {booking.status === 'REQUESTED' && (
                     <span className="text-xs text-gray-400">Pending</span>
@@ -468,9 +518,25 @@ export const Bookings = () => {
                   </div>
                 )}
                 {(booking.status === 'ACCEPTED' || booking.status === 'COMPLETED') && (
-                  <button className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-text-muted font-medium text-sm hover:border-primary/30 hover:text-primary transition-colors flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => {
+                      let targetId: number
+                      let targetName: string
+
+                      if (user?.role === 'PROVIDER') {
+                        targetId = booking.user.id
+                        targetName = booking.user.name
+                      } else {
+                        targetId = isGroup ? group!.provider.id : booking.provider.id
+                        targetName = isGroup ? group!.provider.name : booking.provider.name
+                      }
+
+                      openChat(targetId, targetName)
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-text-muted font-medium text-sm hover:border-primary/30 hover:text-primary transition-colors flex items-center justify-center gap-2"
+                  >
                     <span className="material-symbols-outlined text-lg">chat</span>
-                    Message Provider
+                    {user?.role === 'PROVIDER' ? 'Message Customer' : 'Message Provider'}
                   </button>
                 )}
               </div>

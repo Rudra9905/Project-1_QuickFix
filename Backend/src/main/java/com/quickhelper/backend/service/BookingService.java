@@ -20,7 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import jakarta.annotation.PreDestroy;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +35,24 @@ public class BookingService {
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final NotificationService notificationService;
-    private final org.springframework.scheduling.TaskScheduler taskScheduler;
+    private final StripeService stripeService;
+    
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+    
+    // Shutdown the scheduler when the application stops
+    @jakarta.annotation.PreDestroy
+    public void destroy() {
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
 
     // Trigger restart for migration V1.5
 
@@ -73,6 +95,7 @@ public class BookingService {
             }
         }
         booking.setPreferredTime(request.getPreferredTime());
+        booking.setPaymentIntentId(request.getPaymentIntentId());
 
         // Generate 6-digit OTP
         int otpValue = 100000 + new java.util.Random().nextInt(900000);
@@ -80,7 +103,11 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         
-        // Removed auto-rejection timer - all bookings (including multiple/weekly) can be accepted without expiration
+        // Schedule auto-rejection for single bookings (not multiple booking packages)
+        boolean isPackage = "Multiple Booking Package".equals(request.getNote());
+        if (!isPackage) {
+            scheduleBookingAutoRejection(saved.getId());
+        }
         
         try {
             // Send notification to provider
@@ -131,6 +158,9 @@ public class BookingService {
                     booking.setNote(booking.getNote() + " (Auto-rejected due to timeout)");
                 }
                 bookingRepository.save(booking);
+
+                // Process Refund if applicable
+                processRefund(booking);
                 
                 // Notify user
                  notificationService.notifyBookingRejected(
@@ -206,11 +236,15 @@ public class BookingService {
         Booking updated = bookingRepository.save(booking);
         
         // Send notification to user
+        // Send notification to user
         notificationService.notifyBookingRejected(
                 booking.getUser().getId(),
                 updated.getId(),
                 booking.getProvider().getName()
         );
+
+        // Process Refund
+        processRefund(booking);
         
         return mapToBookingResponseDTO(updated);
     }
@@ -236,6 +270,9 @@ public class BookingService {
                     booking.getUser().getName()
             );
         }
+
+        // Refund Logic
+        processRefund(booking);
         
         return mapToBookingResponseDTO(updated);
     }
@@ -333,10 +370,8 @@ public class BookingService {
              throw new BadRequestException("Job already started");
         }
 
-        // Verify OTP (Exempt Multiple Booking Packages)
-        boolean isPackage = "Multiple Booking Package".equals(booking.getNote());
-        
-        if (!isPackage && (booking.getStartJobOtp() == null || !booking.getStartJobOtp().equals(otp))) {
+        // Verify OTP
+        if (booking.getStartJobOtp() == null || !booking.getStartJobOtp().equals(otp)) {
             throw new BadRequestException("Invalid Start Job OTP");
         }
 
@@ -409,5 +444,86 @@ public class BookingService {
                 booking.getArrivedAt() != null ? booking.getArrivedAt().toString() : null,
                 booking.getStartedAt() != null ? booking.getStartedAt().toString() : null
         );
+    }
+
+    private void processRefund(Booking booking) {
+        if (booking.getPaymentIntentId() != null && !booking.getPaymentIntentId().isEmpty()) {
+            try {
+                System.out.println("Initiating refund for booking: " + booking.getId() + ", paymentIntent: " + booking.getPaymentIntentId());
+                stripeService.refundPayment(booking.getPaymentIntentId());
+                System.out.println("Refund successful");
+
+                // Notify user about refund
+                notificationService.notifyRefundProcessed(
+                        booking.getUser().getId(),
+                        booking.getId(),
+                        0.0 // Placeholder amount
+                );
+            } catch (Exception e) {
+                System.err.println("Error processing refund: " + e.getMessage());
+                e.printStackTrace();
+                // Don't fail the rejection/cancellation, but log error
+            }
+        }
+    }
+    // Schedule auto-rejection for a booking
+    public void scheduleBookingAutoRejection(Long bookingId) {
+        // Schedule the rejection to occur in 5 minutes
+        scheduler.schedule(() -> {
+            try {
+                checkAndRejectBooking(bookingId);
+                System.out.println("Auto-rejected booking: " + bookingId + " after 5 minutes");
+            } catch (Exception e) {
+                System.err.println("Failed to auto-reject booking " + bookingId + ": " + e.getMessage());
+            }
+        }, 5, TimeUnit.MINUTES);
+    }
+    
+    // Cron job to auto-reject expired bookings every 5 minutes (reduced frequency)
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 300000) // Every 5 minutes
+    @Transactional
+    public void scanAndRejectExpiredBookings() {
+        try {
+            System.out.println("[AUTO-REJECT] Running scheduled job at: " + LocalDateTime.now());
+            
+            // Calculate cutoff time: 5 minutes ago
+            LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(5);
+            
+            // Find all bookings that are REQUESTED and created before cutoff time (expired)
+            List<Booking> expiredBookings = bookingRepository.findByStatusAndCreatedAtBefore(BookingStatus.REQUESTED, cutoffTime);
+
+            System.out.println("[AUTO-REJECT] Found " + expiredBookings.size() + " expired bookings to reject");
+            
+            if (!expiredBookings.isEmpty()) {
+                System.out.println("[AUTO-REJECT] Auto-rejecting " + expiredBookings.size() + " bookings...");
+                for (Booking booking : expiredBookings) {
+                    try {
+                        System.out.println("[AUTO-REJECT] Rejecting booking ID: " + booking.getId());
+                        checkAndRejectBooking(booking.getId());
+                        System.out.println("[AUTO-REJECT] Successfully auto-rejected booking: " + booking.getId());
+                    } catch (Exception e) {
+                        System.err.println("[AUTO-REJECT] Failed to auto-reject booking " + booking.getId() + ": " + e.getMessage());
+                    }
+                }
+            } else {
+                System.out.println("[AUTO-REJECT] No expired bookings found");
+            }
+        } catch (Exception e) {
+            System.err.println("[AUTO-REJECT] Error in scheduled job: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // Check if a booking is still active (not completed/cancelled)
+    @Transactional(readOnly = true)
+    public boolean isActiveBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        
+        // Active statuses: REQUESTED, ACCEPTED, IN_PROGRESS
+        // Inactive statuses: CANCELLED, COMPLETED
+        return booking.getStatus() == BookingStatus.REQUESTED || 
+               booking.getStatus() == BookingStatus.ACCEPTED || 
+               booking.getStatus() == BookingStatus.IN_PROGRESS;
     }
 }

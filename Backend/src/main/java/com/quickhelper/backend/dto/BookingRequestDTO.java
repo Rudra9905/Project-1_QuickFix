@@ -21,4 +21,6 @@ public class BookingRequestDTO {
     private String bookingDate;
 
     private String preferredTime;
+
+    private String paymentIntentId;
 }

@@ -3,7 +3,7 @@ import { Card, CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Select } from '../components/ui/Select'
-import { Loader } from '../components/ui/Loader'
+import { ProvidersSkeleton } from '../components/ui/Loader'
 import { ProviderDetailModal } from '../components/ProviderDetailModal'
 import { providerService } from '../services/providerService'
 import { useAuth } from '../contexts/AuthContext'
@@ -127,11 +127,7 @@ export const Providers = () => {
   }
 
   if (isLoading || !isLocationChecked) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
-    )
+    return <ProvidersSkeleton />
   }
 
   return (

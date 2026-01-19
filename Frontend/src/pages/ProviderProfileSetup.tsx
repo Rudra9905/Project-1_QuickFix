@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { Select } from '../components/ui/Select'
-import { Loader } from '../components/ui/Loader'
+import { PageLoadingSkeleton } from '../components/ui/Loader'
 import { MapPinIcon, CheckIcon, UploadIcon } from '../components/icons/CustomIcons'
 import toast from 'react-hot-toast'
 import type { ServiceType, ProviderProfile } from '../types'
@@ -246,11 +246,7 @@ export const ProviderProfileSetup = () => {
     }
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader size="lg" />
-            </div>
-        )
+        return <PageLoadingSkeleton />
     }
 
     if (!user || user.role !== 'PROVIDER') {
