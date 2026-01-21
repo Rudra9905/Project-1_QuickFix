@@ -52,7 +52,8 @@ public class ReviewService {
         return mapToReviewResponseDTO(saved);
     }
 
-    // Returns all reviews for a provider
+    // Returns all requests reviews for a provider
+    @org.springframework.cache.annotation.Cacheable(value = "provider_reviews", key = "#providerId")
     public List<ReviewResponseDTO> getReviewsByProvider(Long providerId) {
         User provider = userRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found with id: " + providerId));
@@ -65,7 +66,8 @@ public class ReviewService {
 
     @Transactional
     // Recomputes the provider's average rating from all reviews
-    private void updateProviderRating(User provider) {
+    @org.springframework.cache.annotation.CacheEvict(value = "provider_reviews", key = "#provider.id")
+    public void updateProviderRating(User provider) {
         Optional<ProviderProfile> profileOpt = providerProfileRepository.findByUser(provider);
 
         if (profileOpt.isPresent()) {

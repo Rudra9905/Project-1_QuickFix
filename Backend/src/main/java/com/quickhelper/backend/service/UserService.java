@@ -7,6 +7,8 @@ import com.quickhelper.backend.model.User;
 import com.quickhelper.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,7 @@ public class UserService {
     }
 
     // Returns a single user mapped to DTO
+    @Cacheable(value = "users", key = "#id")
     public UserResponseDTO getUserById(Long id) {
         User user = findById(id);
         return mapToUserResponseDTO(user);
@@ -63,6 +66,7 @@ public class UserService {
 
     // Updates a user's city
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO updateUserCity(Long id, String city) {
         User user = findById(id);
         user.setCity(city);

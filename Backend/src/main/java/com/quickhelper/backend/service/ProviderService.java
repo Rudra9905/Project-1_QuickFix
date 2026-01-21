@@ -12,6 +12,8 @@ import com.quickhelper.backend.repository.UserRepository;
 import com.quickhelper.backend.util.DistanceCalculator;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -79,6 +81,11 @@ public class ProviderService {
 
     @Transactional
     // Allows provider to update profile details
+    @CacheEvict(value = "providers", key = "#profileId")
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "providers", key = "#profileId"),
+        @CacheEvict(value = "provider_search", allEntries = true)
+    })
     public ProviderResponseDTO updateProviderProfile(Long profileId, ProviderUpdateRequestDTO request) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -124,6 +131,7 @@ public class ProviderService {
 
     @Transactional
     // Provider submits their profile for admin review
+    @CacheEvict(value = "providers", key = "#profileId")
     public ProviderResponseDTO submitForReview(Long profileId) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -140,6 +148,7 @@ public class ProviderService {
     }
 
     @Transactional
+    @CacheEvict(value = "providers", key = "#profileId")
     public ProviderResponseDTO updateResume(Long profileId, String resumeUrl) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -157,6 +166,7 @@ public class ProviderService {
     }
 
     @Transactional
+    @CacheEvict(value = "providers", key = "#profileId")
     public ProviderResponseDTO updateDemoVideo(Long profileId, String demoVideoUrl) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -175,6 +185,7 @@ public class ProviderService {
     
     @Transactional
     // Add a portfolio image to the provider's profile
+    @CacheEvict(value = "providers", key = "#profileId")
     public ProviderResponseDTO addPortfolioImage(Long profileId, String imageUrl) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -193,6 +204,7 @@ public class ProviderService {
     
     @Transactional
     // Remove a portfolio image from the provider's profile
+    @CacheEvict(value = "providers", key = "#profileId")
     public ProviderResponseDTO removePortfolioImage(Long profileId, String imageUrl) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -216,6 +228,10 @@ public class ProviderService {
 
     @Transactional
     // Admin approves a provider profile
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "providers", key = "#profileId"),
+        @CacheEvict(value = "provider_search", allEntries = true)
+    })
     public ProviderResponseDTO approveProvider(Long profileId) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -231,6 +247,10 @@ public class ProviderService {
 
     @Transactional
     // Admin rejects a provider profile
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "providers", key = "#profileId"),
+        @CacheEvict(value = "provider_search", allEntries = true)
+    })
     public ProviderResponseDTO rejectProvider(Long profileId, String reason) {
         ProviderProfile profile = providerProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
@@ -256,6 +276,7 @@ public class ProviderService {
     }
 
     // Returns all providers, optionally filtered by city
+    @Cacheable(value = "provider_search", key = "'all_' + (#city != null ? #city : 'global')")
     public List<ProviderResponseDTO> getAllProviders(String city) {
         List<ProviderProfile> profiles;
         if (city != null && !city.trim().isEmpty()) {
@@ -273,6 +294,7 @@ public class ProviderService {
     }
 
     // Returns all providers within a specified distance from user coordinates
+    @Cacheable(value = "provider_search", key = "{#userLat, #userLng, #maxDistanceKm}")
     public List<ProviderResponseDTO> getAllProvidersWithinDistance(Double userLat, Double userLng, Double maxDistanceKm) {
         System.out.println("getAllProvidersWithinDistance called with: userLat=" + userLat + 
                           ", userLng=" + userLng + ", maxDistanceKm=" + maxDistanceKm);
@@ -293,7 +315,7 @@ public class ProviderService {
             return new ArrayList<>(); // Return empty list
         }
         
-        List<ProviderProfile> profiles = providerProfileRepository.findAll();
+        List<ProviderProfile> profiles = providerProfileRepository.findAllWithImages();
         System.out.println("Total providers in database: " + profiles.size());
         
         List<ProviderResponseDTO> result = profiles.stream()
@@ -314,6 +336,7 @@ public class ProviderService {
     }
 
     // Returns only available providers for a service type (optional city)
+    @Cacheable(value = "provider_search", key = "'avail_' + #serviceType + '_' + (#city != null ? #city : 'global')")
     public List<ProviderResponseDTO> getAvailableProviders(com.quickhelper.backend.model.ServiceType serviceType, String city) {
         List<ProviderProfile> profiles;
         if (city != null && !city.trim().isEmpty()) {
@@ -333,6 +356,7 @@ public class ProviderService {
     }
 
     // Returns only available providers for a service type within a specified distance
+    @Cacheable(value = "provider_search", key = "{#serviceType, #userLat, #userLng, #maxDistanceKm}")
     public List<ProviderResponseDTO> getAvailableProvidersWithinDistance(com.quickhelper.backend.model.ServiceType serviceType, Double userLat, Double userLng, Double maxDistanceKm) {
         System.out.println("getAvailableProvidersWithinDistance called with: serviceType=" + serviceType +
                           ", userLat=" + userLat + ", userLng=" + userLng + ", maxDistanceKm=" + maxDistanceKm);
@@ -375,6 +399,7 @@ public class ProviderService {
     }
 
     // Fetches a provider profile by id
+    @Cacheable(value = "providers", key = "#id")
     public ProviderResponseDTO getProviderById(Long id) {
         ProviderProfile profile = providerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + id));
@@ -396,6 +421,10 @@ public class ProviderService {
 
     @Transactional
     // Updates availability flag for a provider profile
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "providers", key = "#id"),
+        @CacheEvict(value = "provider_search", allEntries = true)
+    })
     public ProviderResponseDTO updateAvailability(Long id, AvailabilityUpdateDTO request) {
         ProviderProfile profile = providerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + id));
@@ -411,6 +440,10 @@ public class ProviderService {
 
     @Transactional
     // Updates latitude/longitude for a provider profile
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = "providers", key = "#id"),
+        @CacheEvict(value = "provider_search", allEntries = true)
+    })
     public ProviderResponseDTO updateLocation(Long id, LocationUpdateDTO request) {
         ProviderProfile profile = providerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + id));
@@ -441,7 +474,11 @@ public class ProviderService {
                 profile.getProfilePhotoUrl(),
                 profile.getTagline()
         );
-        dto.setPortfolioImages(profile.getPortfolioImages());
+        if (profile.getPortfolioImages() != null) {
+            dto.setPortfolioImages(new java.util.ArrayList<>(profile.getPortfolioImages()));
+        } else {
+            dto.setPortfolioImages(new java.util.ArrayList<>());
+        }
         
         // Set user information for display
         ProviderResponseDTO.UserInfo userInfo = new ProviderResponseDTO.UserInfo(

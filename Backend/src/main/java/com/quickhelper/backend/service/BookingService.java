@@ -36,6 +36,7 @@ public class BookingService {
     private final ProviderProfileRepository providerProfileRepository;
     private final NotificationService notificationService;
     private final StripeService stripeService;
+    private final org.springframework.cache.CacheManager cacheManager;
     
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
     
@@ -103,6 +104,9 @@ public class BookingService {
 
         Booking saved = bookingRepository.save(booking);
         
+        // Evict caches for both user and provider
+        utils_evictBookingCaches(saved);
+        
         // Schedule auto-rejection for single bookings (not multiple booking packages)
         boolean isPackage = "Multiple Booking Package".equals(request.getNote());
         if (!isPackage) {
@@ -157,7 +161,8 @@ public class BookingService {
                 } else {
                     booking.setNote(booking.getNote() + " (Auto-rejected due to timeout)");
                 }
-                bookingRepository.save(booking);
+                Booking saved = bookingRepository.save(booking);
+                utils_evictBookingCaches(saved);
 
                 // Process Refund if applicable
                 processRefund(booking);
@@ -172,6 +177,7 @@ public class BookingService {
         });
     }
 
+    @org.springframework.cache.annotation.Cacheable(value = "user_bookings", key = "#userId")
     public List<BookingResponseDTO> getBookingsByUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
@@ -180,6 +186,7 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    @org.springframework.cache.annotation.Cacheable(value = "provider_bookings", key = "#providerId")
     public List<BookingResponseDTO> getBookingsByProvider(Long providerId) {
         User provider = userRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found with id: " + providerId));
@@ -201,6 +208,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.ACCEPTED);
         booking.setAcceptedAt(LocalDateTime.now());
         Booking updated = bookingRepository.save(booking);
+        utils_evictBookingCaches(updated);
         
         // Send notifications
         notificationService.notifyBookingAccepted(
@@ -234,6 +242,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.REJECTED);
         Booking updated = bookingRepository.save(booking);
+        utils_evictBookingCaches(updated);
         
         // Send notification to user
         // Send notification to user
@@ -261,6 +270,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         Booking updated = bookingRepository.save(booking);
+        utils_evictBookingCaches(updated);
         
         // Send notification to provider if cancelled by user
         if (booking.getUser().getRole() == com.quickhelper.backend.model.UserRole.USER) {
@@ -290,6 +300,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.COMPLETED);
         booking.setCompletedAt(LocalDateTime.now());
         Booking updated = bookingRepository.save(booking);
+        utils_evictBookingCaches(updated);
         
         // Send notifications
         notificationService.notifyServiceCompleted(
@@ -343,6 +354,7 @@ public class BookingService {
 
         booking.setArrivedAt(LocalDateTime.now());
         Booking saved = bookingRepository.save(booking);
+        utils_evictBookingCaches(saved);
         
         // Notify user
         notificationService.notifyProviderArrived(
@@ -383,6 +395,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.IN_PROGRESS);
         
         Booking saved = bookingRepository.save(booking);
+        utils_evictBookingCaches(saved);
 
         // Send notification
         notificationService.notifyServiceStarted(booking.getUser().getId(), booking.getId(), booking.getProvider().getName());
@@ -525,5 +538,21 @@ public class BookingService {
         return booking.getStatus() == BookingStatus.REQUESTED || 
                booking.getStatus() == BookingStatus.ACCEPTED || 
                booking.getStatus() == BookingStatus.IN_PROGRESS;
+    }
+    
+    // Helper to evict caches for both user and provider involved in a booking
+    private void utils_evictBookingCaches(Booking booking) {
+        if (booking != null) {
+            try {
+                if (booking.getUser() != null) {
+                    cacheManager.getCache("user_bookings").evict(booking.getUser().getId());
+                }
+                if (booking.getProvider() != null) {
+                    cacheManager.getCache("provider_bookings").evict(booking.getProvider().getId());
+                }
+            } catch (Exception e) {
+                System.err.println("Cache eviction failed: " + e.getMessage());
+            }
+        }
     }
 }

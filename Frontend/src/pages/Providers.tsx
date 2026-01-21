@@ -30,7 +30,6 @@ export const Providers = () => {
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [locationError, setLocationError] = useState<string | null>(null)
   const [isLocationChecked, setIsLocationChecked] = useState(false)
 
   // Get user's current location
@@ -40,20 +39,19 @@ export const Providers = () => {
         (position) => {
           console.log('User location obtained:', position.coords.latitude, position.coords.longitude)
           setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+            lat: Number(position.coords.latitude.toFixed(4)),
+            lng: Number(position.coords.longitude.toFixed(4)),
           })
           setIsLocationChecked(true)
         },
         (error) => {
           console.error('Error getting location:', error)
-          setLocationError('Unable to get your location. Using city-based filtering.')
+          // Fallback to city-based filtering
           setIsLocationChecked(true)
         }
       )
     } else {
       console.log('Geolocation is not supported by this browser')
-      setLocationError('Geolocation is not supported by your browser. Using city-based filtering.')
       setIsLocationChecked(true)
     }
   }, [])
@@ -84,11 +82,16 @@ export const Providers = () => {
       // Use address location if available (from address change), otherwise use geolocation
       const locationToUse = addressLocation || userLocation
       if (locationToUse) {
-        console.log(`Fetching providers within 30km of (${locationToUse.lat}, ${locationToUse.lng})`)
+        // Round coordinates to 4 decimal places (~11m precision) to ensure cache validity
+        // This prevents minor GPS variations from creating new cache keys
+        const roundedLat = Number(locationToUse.lat.toFixed(4))
+        const roundedLng = Number(locationToUse.lng.toFixed(4))
+
+        console.log(`Fetching providers within 30km of (${roundedLat}, ${roundedLng})`)
         data = await providerService.getAllProviders(
           undefined,
-          locationToUse.lat,
-          locationToUse.lng,
+          roundedLat,
+          roundedLng,
           30
         )
       } else if (user?.city) {

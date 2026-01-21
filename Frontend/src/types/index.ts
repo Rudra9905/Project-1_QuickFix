@@ -72,6 +72,10 @@ export interface ProviderProfile {
   city?: string
   stripeAccountId?: string // Stripe Connect Account ID
   payoutsEnabled?: boolean // Whether payouts are enabled
+  user?: {
+    name: string
+    city?: string
+  }
 }
 
 

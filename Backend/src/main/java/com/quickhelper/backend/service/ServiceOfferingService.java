@@ -20,6 +20,7 @@ public class ServiceOfferingService {
     private final ProviderService providerService;
 
     @Transactional(readOnly = true)
+    @org.springframework.cache.annotation.Cacheable(value = "provider_services", key = "#providerId")
     public List<ServiceOfferingResponseDTO> listByProvider(Long providerId) {
         ProviderProfile provider = providerService.getProviderEntity(providerId);
         return serviceOfferingRepository.findByProviderProfileId(provider.getId())
@@ -29,6 +30,7 @@ public class ServiceOfferingService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "provider_services", key = "#providerId")
     public ServiceOfferingResponseDTO create(Long providerId, ServiceOfferingRequestDTO request) {
         ProviderProfile provider = providerService.getProviderEntity(providerId);
         ServiceOffering offering = new ServiceOffering();
@@ -43,6 +45,7 @@ public class ServiceOfferingService {
     }
 
     @Transactional
+    @org.springframework.cache.annotation.CacheEvict(value = "provider_services", key = "#providerId")
     public ServiceOfferingResponseDTO update(Long providerId, Long offeringId, ServiceOfferingRequestDTO request) {
         ProviderProfile provider = providerService.getProviderEntity(providerId);
         ServiceOffering offering = serviceOfferingRepository.findById(offeringId)

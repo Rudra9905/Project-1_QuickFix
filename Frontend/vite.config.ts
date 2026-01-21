@@ -7,6 +7,18 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          websocket: ['@stomp/stompjs', 'sockjs-client'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
   server: {
     port: 3000,
     proxy: {

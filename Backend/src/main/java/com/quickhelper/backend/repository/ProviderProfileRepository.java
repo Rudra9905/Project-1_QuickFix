@@ -31,5 +31,8 @@ public interface ProviderProfileRepository extends JpaRepository<ProviderProfile
     @Query("SELECT DISTINCT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE p.user.city = :city AND p.serviceType = :serviceType AND p.isAvailable = true")
     List<ProviderProfile> findByUserCityAndServiceTypeAndIsAvailableTrue(@Param("city") String city, @Param("serviceType") ServiceType serviceType);
 
+    @Query("SELECT DISTINCT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages")
+    List<ProviderProfile> findAllWithImages();
+
     Long countByIsApprovedTrue();
 }
