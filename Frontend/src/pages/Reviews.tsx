@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
-import { Badge } from '../components/ui/Badge'
+import { Card, CardContent } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Textarea } from '../components/ui/Textarea'
 import { ReviewsSkeleton } from '../components/ui/Loader'
@@ -90,8 +89,8 @@ export const Reviews = () => {
         {reviews.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
-            <MessageSquareIcon size={48} color="#9CA3AF" className="mx-auto mb-4" />
-            <p className="text-gray-500">No reviews yet</p>
+              <MessageSquareIcon size={48} color="#9CA3AF" className="mx-auto mb-4" />
+              <p className="text-gray-500">No reviews yet</p>
             </CardContent>
           </Card>
         ) : (
@@ -110,12 +109,15 @@ export const Reviews = () => {
                       ))}
                     </div>
                     <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900">{review.customerName || 'Anonymous'}</h4>
+                        <span className="text-xs text-gray-500">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
                       {review.comment && (
-                        <p className="text-gray-700 mb-2">{review.comment}</p>
+                        <p className="text-gray-700 text-sm">{review.comment}</p>
                       )}
-                      <p className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -157,20 +159,27 @@ export const Reviews = () => {
                       Completed: {new Date(booking.completedAt!).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setSelectedBooking(booking)
-                      setIsModalOpen(true)
-                    }}
-                  >
-                    Write Review
-                  </Button>
+                  {booking.reviewId ? (
+                    <Button variant="outline" disabled>
+                      Review Submitted
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        setSelectedBooking(booking)
+                        setIsModalOpen(true)
+                      }}
+                    >
+                      Write Review
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      )}
+      )
+      }
 
       <Modal
         isOpen={isModalOpen}
@@ -229,6 +238,6 @@ export const Reviews = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </div >
   )
 }

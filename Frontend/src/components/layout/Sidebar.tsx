@@ -15,12 +15,16 @@ const providerMenuItems: SidebarItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/earnings', label: 'Earnings', icon: 'payments' },
   { path: '/bookings', label: 'Bookings', icon: 'calendar_month' },
+  { path: '/reviews', label: 'Reviews', icon: 'star' },
   { path: '/profile', label: 'Profile', icon: 'group' },
-]// User menu items
+]
+
+// User menu items
 const userMenuItems: SidebarItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { path: '/providers', label: 'Providers', icon: 'group' },
   { path: '/bookings', label: 'Bookings', icon: 'calendar_month' },
+  { path: '/reviews', label: 'Reviews', icon: 'star' },
   { path: '/profile', label: 'Settings', icon: 'settings' },
 ]
 
@@ -88,8 +92,8 @@ export const Sidebar = () => {
                 to={item.path}
                 onClick={() => setIsMobileOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-text-muted hover:bg-surface hover:text-text-dark'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-text-muted hover:bg-surface hover:text-text-dark'
                   }`}
               >
                 <span className={`material-symbols-outlined ${isActive ? 'fill-1' : ''}`}>

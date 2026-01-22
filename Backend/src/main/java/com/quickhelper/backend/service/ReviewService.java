@@ -94,7 +94,8 @@ public class ReviewService {
                 review.getBooking().getId(),
                 review.getRating(),
                 review.getComment(),
-                review.getCreatedAt()
+                review.getCreatedAt(),
+                review.getBooking().getUser().getName()
         );
     }
 }

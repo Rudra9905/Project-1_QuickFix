@@ -17,8 +17,13 @@ import {
   PlumbingIcon,
   LightningIcon,
   HistoryIcon,
+  StarIcon,
 } from '../components/icons/CustomIcons'
 import { format, isToday, isTomorrow, parseISO } from 'date-fns'
+import { Modal } from '../components/ui/Modal'
+import { Textarea } from '../components/ui/Textarea'
+import { Button } from '../components/ui/Button'
+import { reviewService } from '../services/reviewService'
 
 // Service type mapping with icons and labels
 const SERVICE_MAPPING: Record<ServiceType, { label: string; icon: any; color: string }> = {
@@ -149,6 +154,12 @@ export const Bookings = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
 
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [selectedReviewBooking, setSelectedReviewBooking] = useState<Booking | null>(null)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+
   /* Auto-refresh on new notification */
   const { notifications } = useNotifications()
   // Store the ID of the last processed notification to prevent infinite loops or redundant fetches
@@ -244,6 +255,26 @@ export const Bookings = () => {
     } catch (error) {
       console.error('Error cancelling package:', error)
       toast.error('Failed to cancel some bookings in the package')
+    }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!selectedReviewBooking) return
+
+    try {
+      await reviewService.createReview({
+        bookingId: selectedReviewBooking.id,
+        rating,
+        comment: comment || undefined,
+      })
+      toast.success('Review submitted successfully!')
+      setIsReviewModalOpen(false)
+      setSelectedReviewBooking(null)
+      setRating(5)
+      setComment('')
+      fetchBookings() // Refresh to show "Review Submitted" state
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to submit review')
     }
   }
 
@@ -539,6 +570,31 @@ export const Bookings = () => {
                     {user?.role === 'PROVIDER' ? 'Message Customer' : 'Message Provider'}
                   </button>
                 )}
+
+                {booking.status === 'COMPLETED' && (
+                  booking.reviewId ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 font-medium text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-lg">check_circle</span>
+                      Review Submitted
+                    </button>
+                  ) : (
+                    user?.role === 'USER' && (
+                      <button
+                        onClick={() => {
+                          setSelectedReviewBooking(booking)
+                          setIsReviewModalOpen(true)
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl bg-white border border-yellow-400 text-yellow-600 font-medium text-sm hover:bg-yellow-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-lg">star</span>
+                        Write Review
+                      </button>
+                    )
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -627,6 +683,65 @@ export const Bookings = () => {
           </div>
         </div>
       )}
-    </div>
+
+
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false)
+          setSelectedReviewBooking(null)
+          setRating(5)
+          setComment('')
+        }}
+        title="Write a Review"
+      >
+        {selectedReviewBooking && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Rating</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className="focus:outline-none"
+                  >
+                    <StarIcon
+                      size={32}
+                      color={star <= rating ? '#FCD34D' : '#D1D5DB'}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Textarea
+              label="Comment (Optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience..."
+              rows={4}
+            />
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setIsReviewModalOpen(false)
+                  setSelectedReviewBooking(null)
+                  setRating(5)
+                  setComment('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleSubmitReview}>
+                Submit Review
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div >
   )
 }

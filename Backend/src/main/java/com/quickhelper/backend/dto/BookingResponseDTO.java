@@ -27,4 +27,6 @@ public class BookingResponseDTO {
     private String startJobOtp;
     private String arrivedAt;
     private String startedAt;
+    private Long reviewId;
+    private boolean hasReview;
 }

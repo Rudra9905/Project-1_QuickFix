@@ -126,6 +126,7 @@ export interface Booking {
   startJobOtp?: string
   arrivedAt?: string
   startedAt?: string
+  reviewId?: number | null // ID of the review if it exists
 }
 
 // BookingRequest interface: data structure for creating a new booking request
@@ -146,6 +147,7 @@ export interface Review {
   rating: number // Rating given by the user (typically 1-5)
   comment?: string // Optional text comment from the user
   createdAt: string // Timestamp when the review was created (ISO format)
+  customerName?: string // Name of the reviewer
 }
 
 // ReviewRequest interface: data structure for creating a new review

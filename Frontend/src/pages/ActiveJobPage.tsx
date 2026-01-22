@@ -287,6 +287,27 @@ export const ActiveJobPage = () => {
         }
     }
 
+    const handleAccept = async () => {
+        try {
+            await bookingService.acceptBooking(booking!.id)
+            toast.success('Booking accepted!')
+            fetchData() // Refresh to show Start Job buttons
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to accept booking')
+        }
+    }
+
+    const handleReject = async () => {
+        if (!window.confirm('Are you sure you want to decline this job?')) return
+        try {
+            await bookingService.rejectBooking(booking!.id)
+            toast.success('Booking rejected')
+            navigate('/dashboard')
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to reject booking')
+        }
+    }
+
     if (isLoading || !booking) return <TrackingPageSkeleton />
 
     return (
@@ -349,7 +370,17 @@ export const ActiveJobPage = () => {
                     {/* Actions */}
                     <div className="mt-6 pt-6 border-t border-gray-100">
                         {/* Show Start Job for ACCEPTED or IN_PROGRESS (before start) */}
-                        {(booking.status === 'ACCEPTED' || (booking.status === 'IN_PROGRESS' && !booking.startedAt)) ? (
+                        {/* Show Accept/Decline for REQUESTED */}
+                        {booking.status === 'REQUESTED' ? (
+                            <div className="flex gap-3">
+                                <Button onClick={handleReject} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
+                                    Decline
+                                </Button>
+                                <Button onClick={handleAccept} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                                    Accept Job
+                                </Button>
+                            </div>
+                        ) : (booking.status === 'ACCEPTED' || (booking.status === 'IN_PROGRESS' && !booking.startedAt)) ? (
                             showOtpInput ? (
                                 <div className="space-y-3">
                                     <input

@@ -34,6 +34,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ProviderProfileRepository providerProfileRepository;
+    private final com.quickhelper.backend.repository.ReviewRepository reviewRepository;
     private final NotificationService notificationService;
     private final StripeService stripeService;
     private final org.springframework.cache.CacheManager cacheManager;
@@ -441,6 +442,12 @@ public class BookingService {
         providerDTO.setCity(booking.getProvider().getCity());
         providerDTO.setPhone(booking.getProvider().getPhone());
 
+        providerDTO.setPhone(booking.getProvider().getPhone());
+
+        Long reviewId = reviewRepository.findByBooking(booking)
+                .map(com.quickhelper.backend.model.Review::getId)
+                .orElse(null);
+
         return new BookingResponseDTO(
                 booking.getId(),
                 userDTO,
@@ -455,7 +462,9 @@ public class BookingService {
                 booking.getPreferredTime(),
                 booking.getStartJobOtp(),
                 booking.getArrivedAt() != null ? booking.getArrivedAt().toString() : null,
-                booking.getStartedAt() != null ? booking.getStartedAt().toString() : null
+                booking.getStartedAt() != null ? booking.getStartedAt().toString() : null,
+                reviewId,
+                reviewId != null
         );
     }
 

@@ -45,20 +45,18 @@ export const Modal = ({
         className={`bg-white rounded-lg shadow-2xl ${sizes[size]} w-full mx-4 max-h-[90vh] overflow-y-auto relative`}
         onClick={(e) => e.stopPropagation()}
       >
-        {(title || onClose) && (
+        {(title || true) && (
           <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
             {title && (
               <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             )}
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                aria-label="Close"
-              >
-                <XIcon size={24} color="#6B7280" />
-              </button>
-            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+              aria-label="Close"
+            >
+              <XIcon size={24} color="#6B7280" />
+            </button>
           </div>
         )}
         <div className="p-6">{children}</div>

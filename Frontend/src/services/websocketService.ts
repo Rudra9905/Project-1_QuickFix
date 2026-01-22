@@ -66,7 +66,7 @@ class WebSocketService {
     // Disconnect existing connection if any (cleanup before new connection)
     // Note: disconnect() will clear this.userId, so we'll restore it after
     this.disconnect()
-    
+
     // Restore connection parameters after disconnect
     this.userId = savedUserId
     this.userRole = savedUserRole
@@ -361,7 +361,7 @@ class WebSocketService {
 
   subscribeToChat(callback: (message: any) => void) {
     console.log('[WebSocketService] subscribeToChat called, current callbacks:', this.chatCallbacks.size);
-    
+
     // Add the callback to our set of callbacks
     this.chatCallbacks.add(callback);
     console.log('[WebSocketService] Callback added, total callbacks:', this.chatCallbacks.size);
@@ -461,14 +461,16 @@ class WebSocketService {
           console.log('[WebSocketService] Message data:', chatMsg);
           console.log('[WebSocketService] Notifying', this.chatCallbacks.size, 'callbacks');
           // Notify all registered callbacks
-          this.chatCallbacks.forEach((cb, index) => {
+          let i = 0;
+          for (const cb of this.chatCallbacks) {
+            i++;
             try {
-              console.log(`[WebSocketService] Calling callback ${index + 1}/${this.chatCallbacks.size}`);
+              console.log(`[WebSocketService] Calling callback ${i}/${this.chatCallbacks.size}`);
               cb(chatMsg);
             } catch (error) {
-              console.error(`[WebSocketService] Error in chat callback ${index + 1}:`, error);
+              console.error(`[WebSocketService] Error in chat callback ${i}:`, error);
             }
-          });
+          }
         } catch (e) {
           console.error('[WebSocketService] Failed to parse chat message from topic:', e);
         }
@@ -489,14 +491,16 @@ class WebSocketService {
           console.log('[WebSocketService] Message data:', chatMsg);
           console.log('[WebSocketService] Notifying', this.chatCallbacks.size, 'callbacks');
           // Notify all registered callbacks
-          this.chatCallbacks.forEach((cb, index) => {
+          let i = 0;
+          for (const cb of this.chatCallbacks) {
+            i++;
             try {
-              console.log(`[WebSocketService] Calling callback ${index + 1}/${this.chatCallbacks.size}`);
+              console.log(`[WebSocketService] Calling callback ${i}/${this.chatCallbacks.size}`);
               cb(chatMsg);
             } catch (error) {
-              console.error(`[WebSocketService] Error in chat callback ${index + 1}:`, error);
+              console.error(`[WebSocketService] Error in chat callback ${i}:`, error);
             }
-          });
+          }
         } catch (e) {
           console.error('[WebSocketService] Failed to parse chat message from queue:', e);
         }

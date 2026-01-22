@@ -151,6 +151,7 @@ export const ProviderDetailModal = ({
     }
 
     const completeBooking = async (paymentId?: string) => {
+        if (!provider) return;
         setIsBooking(true)
         try {
             // Build note with pricing info
