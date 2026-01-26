@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from '../components/ui/Card'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Textarea } from '../components/ui/Textarea'
 import { ReviewsSkeleton } from '../components/ui/Loader'
@@ -19,6 +20,9 @@ export const Reviews = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [rating, setRating] = useState(5)
+  const [punctualityRating, setPunctualityRating] = useState(5)
+  const [proficiencyRating, setProficiencyRating] = useState(5)
+  const [etiquetteRating, setEtiquetteRating] = useState(5)
   const [comment, setComment] = useState('')
 
   useEffect(() => {
@@ -65,12 +69,18 @@ export const Reviews = () => {
       await reviewService.createReview({
         bookingId: selectedBooking.id,
         rating,
+        punctualityRating,
+        proficiencyRating,
+        etiquetteRating,
         comment: comment || undefined,
       })
       toast.success('Review submitted successfully!')
       setIsModalOpen(false)
       setSelectedBooking(null)
       setRating(5)
+      setPunctualityRating(5)
+      setProficiencyRating(5)
+      setEtiquetteRating(5)
       setComment('')
       fetchCompletedBookings()
     } catch (error: any) {
@@ -99,24 +109,53 @@ export const Reviews = () => {
               <Card key={review.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <StarIcon
-                          key={i}
-                          size={20}
-                          color={i < review.rating ? '#FCD34D' : '#D1D5DB'}
-                        />
-                      ))}
+                    {/* Reviewer Avatar Placeholder */}
+                    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
+                      {review.reviewerName ? review.reviewerName.charAt(0).toUpperCase() : 'U'}
                     </div>
+
                     <div className="flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{review.customerName || 'Anonymous'}</h4>
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-gray-900">
+                          {review.reviewerName || 'Anonymous'}
+                        </h4>
+                        <span className="text-sm text-gray-500">
                           {new Date(review.createdAt).toLocaleDateString()}
                         </span>
                       </div>
+
+                      <div className="flex items-center gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <StarIcon
+                            key={i}
+                            size={16}
+                            color={i < review.rating ? '#FCD34D' : '#D1D5DB'}
+                          />
+                        ))}
+                        <span className="text-sm font-medium ml-1 text-gray-700">{review.rating.toFixed(1)}</span>
+                      </div>
+
+                      {/* Detailed Ratings */}
+                      {(review.punctualityRating || review.proficiencyRating || review.etiquetteRating) && (
+                        <div className="grid grid-cols-3 gap-4 mb-4 bg-gray-50 p-3 rounded-lg text-sm">
+                          <div>
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Punctuality</span>
+                            <span className="font-medium">{review.punctualityRating}/5</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Proficiency</span>
+                            <span className="font-medium">{review.proficiencyRating}/5</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 block text-xs uppercase tracking-wide">Etiquette</span>
+                            <span className="font-medium">{review.etiquetteRating}/5</span>
+                          </div>
+                        </div>
+                      )}
+
+
                       {review.comment && (
-                        <p className="text-gray-700 text-sm">{review.comment}</p>
+                        <p className="text-gray-700">{review.comment}</p>
                       )}
                     </div>
                   </div>
@@ -159,27 +198,20 @@ export const Reviews = () => {
                       Completed: {new Date(booking.completedAt!).toLocaleDateString()}
                     </p>
                   </div>
-                  {booking.reviewId ? (
-                    <Button variant="outline" disabled>
-                      Review Submitted
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        setSelectedBooking(booking)
-                        setIsModalOpen(true)
-                      }}
-                    >
-                      Write Review
-                    </Button>
-                  )}
+                  <Button
+                    onClick={() => {
+                      setSelectedBooking(booking)
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    Write Review
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      )
-      }
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -187,21 +219,26 @@ export const Reviews = () => {
           setIsModalOpen(false)
           setSelectedBooking(null)
           setRating(5)
+          setPunctualityRating(5)
+          setProficiencyRating(5)
+          setEtiquetteRating(5)
           setComment('')
         }}
         title="Write a Review"
       >
         {selectedBooking && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+
+            {/* Overall Rating */}
             <div>
-              <p className="text-sm text-gray-600 mb-2">Rating</p>
+              <p className="text-sm font-medium text-gray-700 mb-2">Overall Rating</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setRating(star)}
-                    className="focus:outline-none"
+                    className="focus:outline-none transition-transform active:scale-95"
                   >
                     <StarIcon
                       size={32}
@@ -211,6 +248,69 @@ export const Reviews = () => {
                 ))}
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Punctuality */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Punctuality</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setPunctualityRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <StarIcon
+                        size={20}
+                        color={star <= punctualityRating ? '#FCD34D' : '#D1D5DB'}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Proficiency */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Proficiency</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setProficiencyRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <StarIcon
+                        size={20}
+                        color={star <= proficiencyRating ? '#FCD34D' : '#D1D5DB'}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Etiquette */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Etiquette</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setEtiquetteRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <StarIcon
+                        size={20}
+                        color={star <= etiquetteRating ? '#FCD34D' : '#D1D5DB'}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <Textarea
               label="Comment (Optional)"
               value={comment}
@@ -218,7 +318,7 @@ export const Reviews = () => {
               placeholder="Share your experience..."
               rows={4}
             />
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
                 className="flex-1"
@@ -226,6 +326,9 @@ export const Reviews = () => {
                   setIsModalOpen(false)
                   setSelectedBooking(null)
                   setRating(5)
+                  setPunctualityRating(5)
+                  setProficiencyRating(5)
+                  setEtiquetteRating(5)
                   setComment('')
                 }}
               >
@@ -238,6 +341,6 @@ export const Reviews = () => {
           </div>
         )}
       </Modal>
-    </div >
+    </div>
   )
 }
