@@ -45,7 +45,7 @@ export const EditLocationModal = ({
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'QuickHelper/1.0',
+            'User-Agent': 'QuickFix/1.0',
           },
         }
       )
@@ -92,7 +92,7 @@ export const EditLocationModal = ({
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'QuickHelper/1.0',
+            'User-Agent': 'QuickFix/1.0',
           },
         }
       )

@@ -13,13 +13,15 @@ import java.util.List;
 @AllArgsConstructor
 // Provider profile projection returned by APIs
 public class ProviderResponseDTO {
-    public ProviderResponseDTO(Long id, Long userId, ServiceType serviceType, ProfileStatus profileStatus, Integer experienceYears, String resumeUrl, String demoVideoUrl, String description, Integer basePrice, Double rating, Boolean isAvailable, Boolean isApproved, Double locationLat, Double locationLng, String rejectionReason, String displayName, String profilePhotoUrl, String tagline) {
+    public ProviderResponseDTO(Long id, Long userId, ServiceType serviceType, ProfileStatus profileStatus, Integer experienceYears, String resumeUrl, String aadharFrontUrl, String aadharBackUrl, String demoVideoUrl, String description, Integer basePrice, Double rating, Boolean isAvailable, Boolean isApproved, Double locationLat, Double locationLng, String rejectionReason, String displayName, String profilePhotoUrl, String tagline) {
         this.id = id;
         this.userId = userId;
         this.serviceType = serviceType;
         this.profileStatus = profileStatus;
         this.experienceYears = experienceYears;
         this.resumeUrl = resumeUrl;
+        this.aadharFrontUrl = aadharFrontUrl;
+        this.aadharBackUrl = aadharBackUrl;
         this.demoVideoUrl = demoVideoUrl;
         this.description = description;
         this.basePrice = basePrice;
@@ -39,6 +41,8 @@ public class ProviderResponseDTO {
     private ProfileStatus profileStatus;
     private Integer experienceYears;
     private String resumeUrl;
+    private String aadharFrontUrl;
+    private String aadharBackUrl;
     private String demoVideoUrl;
     private String description;
     private Integer basePrice;

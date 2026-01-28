@@ -39,12 +39,14 @@ export const ProviderProfileSetup = () => {
     })
 
     const [fileData, setFileData] = useState({
-        resume: null as File | null,
+        aadharFront: null as File | null,
+        aadharBack: null as File | null,
         demoVideo: null as File | null,
     })
 
     const [filePreview, setFilePreview] = useState({
-        resume: null as string | null,
+        aadharFront: null as string | null,
+        aadharBack: null as string | null,
         demoVideo: null as string | null,
     })
 
@@ -76,8 +78,11 @@ export const ProviderProfileSetup = () => {
                     detectedAddress: '',
                 })
 
-                if (providerProfile.resumeUrl) {
-                    setFilePreview(prev => ({ ...prev, resume: providerProfile.resumeUrl || null }))
+                if (providerProfile.aadharFrontUrl) {
+                    setFilePreview(prev => ({ ...prev, aadharFront: providerProfile.aadharFrontUrl || null }))
+                }
+                if (providerProfile.aadharBackUrl) {
+                    setFilePreview(prev => ({ ...prev, aadharBack: providerProfile.aadharBackUrl || null }))
                 }
                 if (providerProfile.demoVideoUrl) {
                     setFilePreview(prev => ({ ...prev, demoVideo: providerProfile.demoVideoUrl || null }))
@@ -164,8 +169,12 @@ export const ProviderProfileSetup = () => {
             newErrors.location = 'Please detect your location'
         }
 
-        if (!filePreview.resume && !profile?.resumeUrl) {
-            newErrors.resume = 'Resume is required'
+        if (!filePreview.aadharFront && !profile?.aadharFrontUrl) {
+            newErrors.aadharFront = 'Aadhar Front is required'
+        }
+
+        if (!filePreview.aadharBack && !profile?.aadharBackUrl) {
+            newErrors.aadharBack = 'Aadhar Back is required'
         }
 
         if (!filePreview.demoVideo && !profile?.demoVideoUrl) {
@@ -176,15 +185,19 @@ export const ProviderProfileSetup = () => {
         return Object.keys(newErrors).length === 0
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'resume' | 'demoVideo') => {
-        if (!e.target.files || e.target.files.length === 0) return
+    const handleRemoveFile = (fileType: 'aadharFront' | 'aadharBack' | 'demoVideo') => {
+        setFileData(prev => ({ ...prev, [fileType]: null }))
+        setFilePreview(prev => ({ ...prev, [fileType]: null }))
+    }
 
-        const file = e.target.files[0]
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'aadharFront' | 'aadharBack' | 'demoVideo') => {
+        const file = e.target.files?.[0]
+        if (!file) return
 
-        // Validate file size
-        const maxSize = fileType === 'resume' ? 5 * 1024 * 1024 : 50 * 1024 * 1024 // 5MB for resume, 50MB for video
+        const maxSize = fileType === 'demoVideo' ? 50 * 1024 * 1024 : 5 * 1024 * 1024 // 5MB for images/PDF, 50MB for video
+
         if (file.size > maxSize) {
-            toast.error(`File size must be less than ${fileType === 'resume' ? '5MB' : '50MB'}`)
+            toast.error(`File size should be less than ${maxSize / (1024 * 1024)}MB`)
             return
         }
 
@@ -221,9 +234,14 @@ export const ProviderProfileSetup = () => {
                 })
             }
 
-            // Step 2: Upload resume if new file selected
-            if (fileData.resume) {
-                currentProfile = await providerService.uploadResume(currentProfile.id, fileData.resume)
+            // Step 2: Upload Aadhar Front if new file selected
+            if (fileData.aadharFront) {
+                currentProfile = await providerService.uploadAadharFront(currentProfile.id, fileData.aadharFront)
+            }
+
+            // Step 2.5: Upload Aadhar Back if new file selected
+            if (fileData.aadharBack) {
+                currentProfile = await providerService.uploadAadharBack(currentProfile.id, fileData.aadharBack)
             }
 
             // Step 3: Upload demo video if new file selected
@@ -397,49 +415,116 @@ export const ProviderProfileSetup = () => {
                             <h2 className="text-xl font-semibold text-gray-900 mb-6">Documents</h2>
 
                             <div className="space-y-6">
-                                {/* Resume Upload */}
+                                {/* Aadhar Front Upload */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                                        Documents (Ex License or PAN) *
+                                        Aadhar Card Front *
                                     </label>
                                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors">
-                                        {filePreview.resume ? (
+                                        {filePreview.aadharFront ? (
                                             <div className="space-y-3">
                                                 <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center">
                                                     <CheckIcon size={32} color="#059669" />
                                                 </div>
-                                                <p className="text-sm text-green-700 font-medium">Resume uploaded</p>
-                                                <a
-                                                    href={filePreview.resume}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:underline text-sm"
-                                                >
-                                                    View Resume
-                                                </a>
+                                                <p className="text-sm text-green-700 font-medium">Aadhar Front uploaded</p>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <a
+                                                        href={filePreview.aadharFront}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 hover:underline text-sm"
+                                                    >
+                                                        View Document
+                                                    </a>
+                                                    {!isUnderReview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveFile('aadharFront')}
+                                                            className="text-red-600 hover:text-red-700 text-sm font-medium hover:underline"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : (
                                             <>
                                                 <UploadIcon size={40} color="#9CA3AF" className="mx-auto mb-3" />
                                                 <input
                                                     type="file"
-                                                    accept=".pdf"
-                                                    onChange={(e) => handleFileChange(e, 'resume')}
+                                                    accept=".pdf,image/*"
+                                                    onChange={(e) => handleFileChange(e, 'aadharFront')}
                                                     disabled={isUnderReview}
                                                     className="hidden"
-                                                    id="resume-upload"
+                                                    id="aadhar-front-upload"
                                                 />
                                                 <label
-                                                    htmlFor="resume-upload"
+                                                    htmlFor="aadhar-front-upload"
                                                     className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
                                                 >
-                                                    Click to upload PDF
+                                                    Click to upload PDF/Image
                                                 </label>
                                                 <p className="text-xs text-gray-500 mt-1">Max size: 5MB</p>
                                             </>
                                         )}
                                     </div>
-                                    {errors.resume && <p className="text-red-600 text-sm mt-2">{errors.resume}</p>}
+                                    {errors.aadharFront && <p className="text-red-600 text-sm mt-2">{errors.aadharFront}</p>}
+                                </div>
+
+                                {/* Aadhar Back Upload */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Aadhar Card Back *
+                                    </label>
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 transition-colors">
+                                        {filePreview.aadharBack ? (
+                                            <div className="space-y-3">
+                                                <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+                                                    <CheckIcon size={32} color="#059669" />
+                                                </div>
+                                                <p className="text-sm text-green-700 font-medium">Aadhar Back uploaded</p>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <a
+                                                        href={filePreview.aadharBack}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 hover:underline text-sm"
+                                                    >
+                                                        View Document
+                                                    </a>
+                                                    {!isUnderReview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveFile('aadharBack')}
+                                                            className="text-red-600 hover:text-red-700 text-sm font-medium hover:underline"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <UploadIcon size={40} color="#9CA3AF" className="mx-auto mb-3" />
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,image/*"
+                                                    onChange={(e) => handleFileChange(e, 'aadharBack')}
+                                                    disabled={isUnderReview}
+                                                    className="hidden"
+                                                    id="aadhar-back-upload"
+                                                />
+                                                <label
+                                                    htmlFor="aadhar-back-upload"
+                                                    className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
+                                                >
+                                                    Click to upload PDF/Image
+                                                </label>
+                                                <p className="text-xs text-gray-500 mt-1">Max size: 5MB</p>
+                                            </>
+                                        )}
+                                    </div>
+                                    {errors.aadharBack && <p className="text-red-600 text-sm mt-2">{errors.aadharBack}</p>}
                                 </div>
 
                                 {/* Demo Video Upload */}
@@ -502,7 +587,8 @@ export const ProviderProfileSetup = () => {
                                     'Years of experience',
                                     'Base service price',
                                     'Your location',
-                                    'Resume (PDF format)',
+                                    'Aadhar Front (PDF/Image)',
+                                    'Aadhar Back (PDF/Image)',
                                     'Demo video (MP4 format)',
                                 ].map((item, idx) => (
                                     <li key={idx} className="flex items-start gap-2">

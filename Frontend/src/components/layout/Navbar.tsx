@@ -21,7 +21,7 @@ export const Navbar = ({ onEditAddress, address }: NavbarProps) => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-purple-400/30 bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6366F1] h-16 shrink-0 shadow-md">
-      <div className="flex items-center justify-between h-full px-4 md:px-6 w-full">
+      <div className="relative flex items-center justify-between h-full px-4 md:px-6 w-full">
         <Link to="/dashboard" className="flex items-center gap-3 text-white">
           <div className="size-8 text-white">
             <svg className="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -39,7 +39,7 @@ export const Navbar = ({ onEditAddress, address }: NavbarProps) => {
         {/* Address field for users and providers */}
         {user && (user.role === 'USER' || user.role === 'PROVIDER') && (
           <div
-            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white text-sm border border-white/30 cursor-pointer hover:bg-white/30 transition-colors max-w-md w-full mx-4"
+            className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white text-sm border border-white/30 cursor-pointer hover:bg-white/30 transition-colors w-full max-w-md"
             onClick={onEditAddress}
           >
             <span className="material-symbols-outlined text-white text-lg">location_on</span>

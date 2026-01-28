@@ -50,6 +50,26 @@ export const providerService = {
     return response.data
   },
 
+  // Upload Aadhar Front
+  uploadAadharFront: async (profileId: number, file: File): Promise<ProviderProfile> => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/aadhar-front`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  // Upload Aadhar Back
+  uploadAadharBack: async (profileId: number, file: File): Promise<ProviderProfile> => {
+    const form = new FormData()
+    form.append('file', file)
+    const response = await apiClient.post<ProviderProfile>(`/providers/${profileId}/aadhar-back`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
   // Upload demo video file
   uploadDemoVideo: async (profileId: number, file: File): Promise<ProviderProfile> => {
     const form = new FormData()

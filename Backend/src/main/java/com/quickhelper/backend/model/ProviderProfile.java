@@ -43,6 +43,12 @@ public class ProviderProfile implements Serializable {
     @Column(name = "resume_url")
     private String resumeUrl; // Stored resume location or URL
 
+    @Column(name = "aadhar_front_url")
+    private String aadharFrontUrl; // Stored Aadhar front image location or URL
+
+    @Column(name = "aadhar_back_url")
+    private String aadharBackUrl; // Stored Aadhar back image location or URL
+
     @Column(name = "demo_video_url")
     private String demoVideoUrl; // Stored demo video location or URL
 

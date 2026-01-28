@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Retrieve stored user data and token from browser's local storage
     const storedUser = localStorage.getItem('user')
     const storedToken = localStorage.getItem('token')
-    
+
     // If both user data and token exist, try to restore the session
     if (storedUser && storedToken) {
       try {
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Call the authentication service to log in
       const response: AuthResponse = await authService.login({ email, password })
-      
+
       // Extract user data from the response
       const userData: User = {
         id: response.id,
@@ -74,13 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: response.role,
         city: response.city,
       }
-      
+
       // Update state with the authenticated user
       setUser(userData)
       // Store user data and token in localStorage for persistence
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('token', response.token)
-      
+
       // Show success notification to the user
       toast.success('Login successful!')
     } catch (error: any) {
@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Call the authentication service to register a new user
       const response: AuthResponse = await authService.register(data)
-      
+
       // Extract user data from the response
       const userData: User = {
         id: response.id,
@@ -116,13 +116,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: response.role,
         city: response.city,
       }
-      
+
       // Update state with the newly registered user
       setUser(userData)
       // Store user data and token in localStorage for persistence
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('token', response.token)
-      
+
       // Show success notification to the user
       toast.success('Registration successful!')
     } catch (error: any) {
@@ -149,11 +149,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Update user function: updates the current user data
   const updateUser = (userData: Partial<User>) => {
     if (!user) return;
-    
+
     // Update the user state
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
-    
+
     // Update localStorage
     localStorage.setItem('user', JSON.stringify(updatedUser));
   }

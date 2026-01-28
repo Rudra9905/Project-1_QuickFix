@@ -55,6 +55,8 @@ export interface ProviderProfile {
   profileStatus: ProfileStatus // Lifecycle status for approval flow
   experienceYears?: number // Experience in years
   resumeUrl?: string // Resume PDF URL
+  aadharFrontUrl?: string // Aadhar Front Image URL
+  aadharBackUrl?: string // Aadhar Back Image URL
   demoVideoUrl?: string // Demo video URL
   description?: string // Optional description of the provider's services
   basePrice?: number // Optional base price for the service

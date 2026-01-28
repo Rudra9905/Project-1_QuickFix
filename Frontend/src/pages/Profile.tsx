@@ -838,100 +838,161 @@ const ProviderProfileView = () => {
 }
 
 const UserProfileView = ({ user, onLogout }: { user: any; onLogout: () => void }) => {
-  const menuItems = [
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: user.name || '',
+    phone: user.phone || '',
+    city: user.city || ''
+  })
+  const navigate = useNavigate()
+  const { fetchUser } = useAuth() // Assuming fetchUser refreshes user data in context
+
+  const handleSave = async () => {
+    try {
+      await import('../services/userService').then(m => m.userService.updateUser(user.id, editForm))
+      setIsEditing(false)
+      toast.success('Profile updated successfully')
+      // Refresh user context if possible, or just wait for reload. 
+      // Ideally AuthContext should expose a reload or we manually update it.
+      // For now, reload page to reflect simple changes or assume Context updates eventually.
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to update profile', error)
+      toast.error('Failed to update profile')
+    }
+  }
+
+  const quickLinks = [
     {
-      icon: MapPinIcon,
-      label: 'Addresses',
-      description: 'Manage delivery addresses',
-      path: '/addresses',
-      color: '#5B21B6'
-    },
-    {
-      icon: WalletIcon,
-      label: 'Payments',
-      description: 'Saved cards & history',
-      path: '/payments',
-      color: '#EC4899'
-    },
-    {
-      icon: TagIcon,
-      label: 'Coupons',
-      description: 'Discounts & offers',
-      path: '/coupons',
-      color: '#F59E0B'
+      icon: WalletIcon, // Reusing WalletIcon as "Bookings" indicator for now if Calendar isn't available
+      label: 'My Bookings',
+      description: 'View past and upcoming jobs',
+      path: '/bookings',
+      color: '#6366F1',
+      action: () => navigate('/bookings')
     },
     {
       icon: HeadphonesIcon,
-      label: 'Support',
-      description: 'Get help & FAQs',
-      path: '/support',
-      color: '#10B981'
-    },
+      label: 'Help & Support',
+      description: 'Contact our support team',
+      path: '#',
+      color: '#10B981',
+      action: () => window.location.href = 'mailto:support@quickfix.com'
+    }
   ]
 
   return (
-    <div className="max-w-4xl mx-auto pb-24 space-y-8">
+    <div className="max-w-4xl mx-auto pb-24 space-y-6">
       {/* Hero Section / Profile Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-large p-8 md:p-12">
         {/* Decorative background circles */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white opacity-10 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-white opacity-10 blur-2xl"></div>
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+        <div className="relative z-10 flex flex-col md:flex-row items-start gap-8">
           <div className="relative">
-            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full p-1 bg-white/20 backdrop-blur-sm shadow-xl">
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full p-1 bg-white/20 backdrop-blur-sm shadow-xl flex items-center justify-center">
               <Avatar name={user.name} className="h-full w-full border-4 border-white text-3xl font-bold" />
             </div>
-            {/* Online/Status Indicator could go here */}
           </div>
 
-          <div className="text-center md:text-left flex-1 space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              {user.name}
-            </h1>
-            <div className="flex flex-col md:flex-row items-center gap-4 text-white/90 font-medium">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
-                <span className="material-symbols-outlined text-[18px]">mail</span>
-                {user.email}
-              </div>
-              {(user as any).phone && (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
-                  <PhoneIcon size={16} color="currentColor" />
-                  {(user as any).phone}
+          <div className="flex-1 space-y-4 w-full">
+            {isEditing ? (
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-white/80 text-sm pl-1">Full Name</label>
+                    <input
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-white/80 text-sm pl-1">Phone Number</label>
+                    <input
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-white/80 text-sm pl-1">City</label>
+                    <input
+                      value={editForm.city}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, city: e.target.value }))}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-white text-primary hover:bg-white/90"
+                    onClick={handleSave}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center md:text-left space-y-2">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                  {user.name}
+                </h1>
+                <div className="flex flex-col md:flex-row items-center gap-4 text-white/90 font-medium">
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
+                    <span className="material-symbols-outlined text-[18px]">mail</span>
+                    {user.email}
+                  </div>
+                  {(user.phone || user.city) && (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-sm border border-white/10">
+                      <span className="material-symbols-outlined text-[18px]">location_on</span>
+                      {[user.phone, user.city].filter(Boolean).join(' • ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="mt-4 md:mt-0">
-            <Button
-              variant="secondary"
-              className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all font-semibold shadow-lg"
-              onClick={() => console.log('Edit Profile')}
-            >
-              <span className="material-symbols-outlined text-xl mr-2">edit</span>
-              Edit Profile
-            </Button>
-          </div>
+          {!isEditing && (
+            <div className="mt-4 md:mt-0">
+              <Button
+                variant="secondary"
+                className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all font-semibold shadow-lg"
+                onClick={() => setIsEditing(true)}
+              >
+                <span className="material-symbols-outlined text-xl mr-2">edit</span>
+                Edit Profile
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Quick Actions Grid */}
+      {/* Quick Links Section */}
       <div>
-        <h2 className="text-xl font-bold text-text-primary mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2 px-1">
           <span className="w-1 h-6 bg-primary rounded-full"></span>
-          Account Settings
+          Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {menuItems.map((item, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {quickLinks.map((item, index) => {
             const Icon = item.icon
             return (
               <Card
                 key={index}
                 className="group cursor-pointer border-transparent hover:border-primary/10 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 overflow-hidden relative"
-                onClick={() => {
-                  console.log(`Navigate to ${item.path}`)
-                }}
+                onClick={item.action}
               >
                 <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <ArrowRightIcon size={20} color={item.color} />
@@ -940,10 +1001,10 @@ const UserProfileView = ({ user, onLogout }: { user: any; onLogout: () => void }
                 <CardContent className="p-6">
                   <div className="flex items-start gap-5">
                     <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110"
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110"
                       style={{ backgroundColor: `${item.color}15` }}
                     >
-                      <Icon size={28} color={item.color} />
+                      <Icon size={24} color={item.color} />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-text-primary group-hover:text-primary transition-colors">
@@ -965,10 +1026,10 @@ const UserProfileView = ({ user, onLogout }: { user: any; onLogout: () => void }
       <div className="flex justify-center pt-8">
         <Button
           variant="outline"
-          className="text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200 w-full md:w-auto px-8 py-6 rounded-xl hover:shadow-md transition-all"
+          className="text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200 w-full md:w-auto px-8 py-4 rounded-xl hover:shadow-md transition-all"
           onClick={onLogout}
         >
-          <LogOutIcon size={22} color="currentColor" className="mr-2" />
+          <LogOutIcon size={20} color="currentColor" className="mr-2" />
           <span className="font-semibold text-lg">Sign Out</span>
         </Button>
       </div>

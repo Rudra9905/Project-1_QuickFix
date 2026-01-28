@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { providerService } from '../services/providerService'
+import { reviewService } from '../services/reviewService'
+import type { ProviderProfile, Review } from '../types'
 
 interface Stats {
   activeProviders: number;
@@ -16,6 +19,8 @@ export const LandingPage = () => {
     averageRating: 4.8,
     satisfactionRate: 98
   });
+  const [recentReviews, setRecentReviews] = useState<Review[]>([])
+  const [featuredProvider, setFeaturedProvider] = useState<ProviderProfile | null>(null)
 
   useEffect(() => {
     const fetchStats = async (lat?: number, lng?: number) => {
@@ -34,8 +39,32 @@ export const LandingPage = () => {
       }
     };
 
+    const fetchRealData = async () => {
+      try {
+        // Fetch reviews
+        const reviews = await reviewService.getRecentReviews(4)
+        setRecentReviews(reviews)
+
+        // Fetch providers and pick a random high-rated one to feature
+        const providers = await providerService.getAllProviders()
+        if (providers.length > 0) {
+          // Filter for ratings >= 4.5
+          const topPros = providers.filter(p => p.rating >= 4.5)
+          const pool = topPros.length > 0 ? topPros : providers
+          const randomPro = pool[Math.floor(Math.random() * pool.length)]
+          setFeaturedProvider(randomPro)
+
+          // Update stats with real count
+          setStats(prev => ({ ...prev, activeProviders: providers.length }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch landing page data', error)
+      }
+    }
+
     // Fetch stats without location initially to avoid browser violation
     fetchStats();
+    fetchRealData();
 
     // We can add a "Locate Me" button later if needed
   }, []);
@@ -63,23 +92,11 @@ export const LandingPage = () => {
           </div>
 
           <div className="hidden md:flex flex-1 justify-end items-center gap-8">
-            <nav className="flex items-center gap-6">
-              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#">Services</a>
-              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#how-it-works">How it works</a>
-              <a className="text-indigo-50 hover:text-white transition-colors text-sm font-medium" href="#reviews">Reviews</a>
-            </nav>
-            <div className="flex gap-3">
-              <button
-                onClick={handleLogin}
-                className="px-5 h-10 rounded-full text-white font-medium text-sm hover:bg-white/10 transition-all border border-transparent hover:border-white/20">
-                Log In
-              </button>
-              <button
-                onClick={handleBookNow}
-                className="px-6 h-10 rounded-full bg-white text-[#7C3AED] font-bold text-sm hover:bg-indigo-50 transition-all shadow-lg shadow-indigo-900/10 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
-                Book Now
-              </button>
-            </div>
+            <button
+              onClick={handleLogin}
+              className="px-6 h-10 rounded-full bg-white text-[#7C3AED] font-bold text-sm hover:bg-indigo-50 transition-all shadow-lg shadow-indigo-900/10 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
+              Try Now
+            </button>
           </div>
           <div className="md:hidden text-white cursor-pointer hover:bg-white/10 p-2 rounded-full transition-colors">
             <span className="material-symbols-outlined block">menu</span>
@@ -113,18 +130,6 @@ export const LandingPage = () => {
                 </p>
 
                 <div className="w-full max-w-lg mx-auto lg:mx-0">
-                  {/* <label className="relative flex items-center group">
-                    <div className="absolute left-4 text-indigo-500 transition-colors group-focus-within:text-indigo-600">
-                      <span className="material-symbols-outlined text-2xl">location_on</span>
-                    </div>
-                    <input
-                      className="w-full h-14 md:h-16 pl-12 pr-36 rounded-2xl border border-slate-200 bg-white shadow-xl shadow-indigo-100/40 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED] transition-all text-base md:text-lg"
-                      placeholder="Enter your zip code"
-                    />
-                    <button className="absolute right-2 h-10 md:h-12 px-6 md:px-8 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#6366F1] text-white font-bold text-sm md:text-base shadow-md hover:shadow-lg hover:brightness-110 transition-all active:scale-95">
-                      Find Help
-                    </button>
-                  </label> */}
                   <div className="mt-4 flex items-center justify-center lg:justify-start gap-2 text-sm font-medium text-slate-400">
                     <span className="material-symbols-outlined text-indigo-500 text-lg">verified_user</span>
                     <span>Fully Licensed & Insured Professionals</span>
@@ -133,34 +138,47 @@ export const LandingPage = () => {
               </div>
 
               <div className="flex-1 w-full max-w-[600px] lg:max-w-none perspective-1000">
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#7C3AED] to-[#6366F1] rounded-[2.5rem] rotate-3 opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500"></div>
-                  <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 aspect-[4/3] bg-slate-900 border-4 border-white transform transition-transform duration-500 hover:scale-[1.01]">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-110"
-                      style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCoFkPBXqUA7tPsIF2GqAGrRuyZevVww--vCKlRoF6F6ZTvJZTU6jp-dJ-a5DKllt_jOYsPnYab3u_jnIk2S2f2p_kdOztVB53B6LybCzkVAhl3tL8dLPsIkcMw2pO_wPFzWCc0TyH_gRdEKGO82fOrc6cgmR1OpzAiYK2pnP9Ut7eO8Pkxlh9y_3l5l4YeuQHgqQfd-dHxpNXqTnHqRSO_o_xyS1jPuFyVv1Ee9sb4kIOaM9zI5OExAYoiQTqgz9Qlxmor_lUfiL4")' }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
-                    </div>
+                {featuredProvider ? (
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#7C3AED] to-[#6366F1] rounded-[2.5rem] rotate-3 opacity-20 blur-2xl group-hover:opacity-30 transition-opacity duration-500"></div>
+                    <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 aspect-[4/3] bg-slate-900 border-4 border-white transform transition-transform duration-500 hover:scale-[1.01]">
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-110"
+                        style={{ backgroundImage: `url(${featuredProvider.portfolioImages?.[0] ? `http://localhost:8080${featuredProvider.portfolioImages[0]}` : 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2069&auto=format&fit=crop'})` }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                      </div>
 
-                    <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50">
-                      <div className="relative">
-                        <div className="size-12 rounded-full bg-indigo-100 flex items-center justify-center text-[#7C3AED]">
-                          <span className="material-symbols-outlined">bolt</span>
+                      <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50">
+                        <div className="relative">
+                          <div className="size-12 rounded-full bg-indigo-100 overflow-hidden flex items-center justify-center text-[#7C3AED]">
+                            {featuredProvider.profilePhotoUrl ? (
+                              <img src={featuredProvider.profilePhotoUrl} alt="Pro" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined">bolt</span>
+                            )}
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
-                        <div className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-2 border-white rounded-full"></div>
-                      </div>
-                      <div>
-                        <p className="text-slate-900 font-bold text-sm">Mike is arriving</p>
-                        <p className="text-indigo-600 font-medium text-xs">4 mins away • Electrical Expert</p>
-                      </div>
-                      <div className="ml-auto flex flex-col items-end">
-                        <div className="flex text-yellow-500 text-xs">★★★★★</div>
-                        <span className="text-slate-400 text-[10px] font-medium">5.0 (124 jobs)</span>
+                        <div>
+                          <p className="text-slate-900 font-bold text-sm">{(featuredProvider as any).displayName || 'Expert Pro'} is available</p>
+                          <p className="text-indigo-600 font-medium text-xs">4 mins away • {featuredProvider.serviceType}</p>
+                        </div>
+                        <div className="ml-auto flex flex-col items-end">
+                          <div className="flex text-yellow-500 text-xs">★★★★★</div>
+                          <span className="text-slate-400 text-[10px] font-medium">{featuredProvider.rating.toFixed(1)} ({featuredProvider.reviewCount || 100} jobs)</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // Fallback if no provider loaded
+                  <div className="relative group">
+                    <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl aspect-[4/3] bg-slate-100 flex items-center justify-center">
+                      <p className="text-slate-400">Loading top pros...</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -191,10 +209,6 @@ export const LandingPage = () => {
                 <span className="text-[#7C3AED] font-bold tracking-wider uppercase text-sm" style={{ fontSize: '3rem' }}>Services</span>
                 <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mt-2" style={{ fontSize: '2rem' }}>Whatever breaks, we fix.</h2>
               </div>
-              {/* <a href="#" className="flex items-center gap-2 text-[#7C3AED] font-bold hover:text-[#6366F1] transition-colors group">
-                View all services
-                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
-              </a> */}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -263,9 +277,6 @@ export const LandingPage = () => {
                   We've expanded our network. Average response time in your neighborhood is currently <span className="font-bold text-white underline decoration-white/30 decoration-2 underline-offset-4">14 minutes</span>.
                 </p>
               </div>
-              {/* <button className="shrink-0 h-14 px-8 rounded-full bg-white text-[#7C3AED] font-bold text-lg hover:bg-slate-50 transition-colors shadow-lg shadow-black/10 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
-                View Live Map
-              </button> */}
             </div>
           </div>
         </section>
@@ -275,28 +286,27 @@ export const LandingPage = () => {
           <div className="max-w-[1200px] mx-auto px-4 md:px-8">
             <h2 className="text-3xl font-bold text-slate-900 mb-10 text-center">What neighbors are saying</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { name: 'James D.', loc: 'Brooklyn, NY', txt: 'My sink burst at 10 PM. QuickHelper had a plumber at my door in 18 minutes. Lifesaver.' },
-                { name: 'Sarah L.', loc: 'Austin, TX', txt: 'The tracking feature is amazing. I knew exactly when the electrician would arrive. No more 4-hour windows.' },
-                { name: 'Emily R.', loc: 'San Francisco, CA', txt: 'The pro was polite, on-time and left everything spotless. Easily the best home service experience I\'ve had.' },
-                { name: 'Marcus T.', loc: 'Seattle, WA', txt: 'Booked a quick clean before my in-laws arrived. The team was efficient and thorough. Highly recommend.' }
-              ].map((t, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-4 hover:border-indigo-200 transition-colors">
-                  <div className="flex text-yellow-400 text-sm gap-0.5">
-                    {'★★★★★'}
-                  </div>
-                  <p className="text-slate-600 italic font-medium leading-relaxed">"{t.txt}"</p>
-                  <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-50">
-                    <div className="size-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 text-[#7C3AED] flex items-center justify-center font-bold text-sm">
-                      {t.name[0]}
+              {recentReviews.length > 0 ? (
+                recentReviews.map((review, i) => (
+                  <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-4 hover:border-indigo-200 transition-colors">
+                    <div className="flex text-yellow-400 text-sm gap-0.5">
+                      {[...Array(review.rating)].map((_, i) => <span key={i}>★</span>)}
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 text-sm">{t.name}</p>
-                      <p className="text-xs text-slate-400">{t.loc}</p>
+                    <p className="text-slate-600 italic font-medium leading-relaxed">"{review.comment || 'Great service!'}"</p>
+                    <div className="mt-auto flex items-center gap-3 pt-4 border-t border-slate-50">
+                      <div className="size-10 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 text-[#7C3AED] flex items-center justify-center font-bold text-sm">
+                        {review.posterName ? review.posterName[0].toUpperCase() : 'U'}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{review.posterName || 'User'}</p>
+                        <p className="text-xs text-slate-400">Verified Customer</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="col-span-4 text-center text-slate-500">No reviews yet. Be the first to try QuickFix!</p>
+              )}
             </div>
           </div>
         </section>

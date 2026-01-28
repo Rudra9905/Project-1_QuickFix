@@ -39,5 +39,14 @@ export const userService = {
       }
     })
     return response.data
+  },
+
+  // Updates a user's profile
+  // @param id - The ID of the user to update
+  // @param data - The data to update (name, phone, city)
+  // @returns Promise that resolves to the updated User object
+  updateUser: async (id: number, data: { name?: string; phone?: string; city?: string }): Promise<User> => {
+    const response = await apiClient.put<User>(`/users/${id}`, data)
+    return response.data
   }
 }

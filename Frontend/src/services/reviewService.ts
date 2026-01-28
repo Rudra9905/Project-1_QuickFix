@@ -22,4 +22,12 @@ export const reviewService = {
     )
     return response.data
   },
+
+  // Retrieves recent reviews across all providers
+  // @param limit - Max number of reviews to fetch (default 4)
+  // @returns Promise that resolves to an array of Review objects
+  getRecentReviews: async (limit: number = 4): Promise<Review[]> => {
+    const response = await apiClient.get<Review[]>(`/reviews/recent?limit=${limit}`)
+    return response.data
+  },
 }

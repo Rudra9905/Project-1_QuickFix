@@ -36,6 +36,13 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @PutMapping("/{id}")
+    // Updates a user's profile
+    public ResponseEntity<UserResponseDTO> updateUser(@PathVariable Long id, @RequestBody com.quickhelper.backend.dto.UserUpdateRequestDTO request) {
+        UserResponseDTO user = userService.updateUser(id, request);
+        return ResponseEntity.ok(user);
+    }
+
     @PutMapping("/{id}/city")
     // Updates a user's city
     public ResponseEntity<UserResponseDTO> updateUserCity(@PathVariable Long id, @RequestBody(required = false) String city) {

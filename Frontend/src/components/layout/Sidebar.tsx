@@ -110,23 +110,7 @@ export const Sidebar = () => {
           })}
         </nav>
 
-        {/* Need Help Section */}
-        <div className="px-4 pb-6">
-          <div className="rounded-2xl bg-surface p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="size-10 rounded-full bg-white flex items-center justify-center text-accent-orange shadow-sm">
-                <span className="material-symbols-outlined">support_agent</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-text-dark">Need Help?</p>
-                <p className="text-[10px] text-text-muted">Contact Support</p>
-              </div>
-            </div>
-            <button className="w-full rounded-lg bg-text-dark py-2 text-xs font-medium text-white hover:bg-primary transition-colors">
-              Get Assistance
-            </button>
-          </div>
-        </div>
+
       </aside>
 
       {/* Overlay for mobile */}

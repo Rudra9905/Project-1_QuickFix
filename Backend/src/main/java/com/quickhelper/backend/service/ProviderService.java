@@ -10,11 +10,12 @@ import com.quickhelper.backend.model.ProfileStatus;
 import com.quickhelper.backend.repository.ProviderProfileRepository;
 import com.quickhelper.backend.repository.UserRepository;
 import com.quickhelper.backend.util.DistanceCalculator;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -269,13 +270,15 @@ public class ProviderService {
                 profile.getDescription() == null || profile.getDescription().isBlank() ||
                 profile.getBasePrice() == null ||
                 profile.getExperienceYears() == null ||
-                profile.getResumeUrl() == null || profile.getResumeUrl().isBlank() ||
+                profile.getAadharFrontUrl() == null || profile.getAadharFrontUrl().isBlank() ||
+                profile.getAadharBackUrl() == null || profile.getAadharBackUrl().isBlank() ||
                 profile.getDemoVideoUrl() == null || profile.getDemoVideoUrl().isBlank()) {
-            throw new IllegalStateException("Profile is incomplete. Please provide service type, description, experience, base price, resume, and demo video.");
+            throw new IllegalStateException("Profile is incomplete. Please provide service type, description, experience, base price, Aadhar card (front & back), and demo video.");
         }
     }
 
     // Returns all providers, optionally filtered by city
+    @Transactional(readOnly = true)
     @Cacheable(value = "provider_search", key = "'all_' + (#city != null ? #city : 'global')")
     public List<ProviderResponseDTO> getAllProviders(String city) {
         List<ProviderProfile> profiles;
@@ -294,6 +297,7 @@ public class ProviderService {
     }
 
     // Returns all providers within a specified distance from user coordinates
+    @Transactional(readOnly = true)
     @Cacheable(value = "provider_search", key = "{#userLat, #userLng, #maxDistanceKm}")
     public List<ProviderResponseDTO> getAllProvidersWithinDistance(Double userLat, Double userLng, Double maxDistanceKm) {
         System.out.println("getAllProvidersWithinDistance called with: userLat=" + userLat + 
@@ -336,6 +340,7 @@ public class ProviderService {
     }
 
     // Returns only available providers for a service type (optional city)
+    @Transactional(readOnly = true)
     @Cacheable(value = "provider_search", key = "'avail_' + #serviceType + '_' + (#city != null ? #city : 'global')")
     public List<ProviderResponseDTO> getAvailableProviders(com.quickhelper.backend.model.ServiceType serviceType, String city) {
         List<ProviderProfile> profiles;
@@ -356,6 +361,7 @@ public class ProviderService {
     }
 
     // Returns only available providers for a service type within a specified distance
+    @Transactional(readOnly = true)
     @Cacheable(value = "provider_search", key = "{#serviceType, #userLat, #userLng, #maxDistanceKm}")
     public List<ProviderResponseDTO> getAvailableProvidersWithinDistance(com.quickhelper.backend.model.ServiceType serviceType, Double userLat, Double userLng, Double maxDistanceKm) {
         System.out.println("getAvailableProvidersWithinDistance called with: serviceType=" + serviceType +
@@ -453,6 +459,50 @@ public class ProviderService {
         return mapToProviderResponseDTO(updated);
     }
 
+    @Autowired
+    private AadharService aadharService;
+
+    @Transactional
+    @CacheEvict(value = "providers", key = "#profileId")
+    public ProviderResponseDTO uploadAadharFront(Long profileId, String fileUrl) {
+        ProviderProfile profile = providerProfileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
+        
+        if (profile.getProfileStatus() == ProfileStatus.PENDING_APPROVAL || profile.getProfileStatus() == ProfileStatus.APPROVED) {
+            throw new IllegalStateException("Profile cannot be edited while under review or after approval");
+        }
+
+        profile.setAadharFrontUrl(fileUrl);
+        profile.setProfileStatus(ProfileStatus.INCOMPLETE);
+        profile.setIsApproved(false);
+        profile.setRejectionReason(null);
+        ProviderProfile updated = providerProfileRepository.save(profile);
+        return mapToProviderResponseDTO(updated);
+    }
+
+    @Transactional
+    @CacheEvict(value = "providers", key = "#profileId")
+    public ProviderResponseDTO uploadAadharBack(Long profileId, String fileUrl, MultipartFile file) {
+        // Validate QR Code first
+        if (!aadharService.validateAadharQR(file)) {
+            throw new IllegalArgumentException("Invalid Aadhar Card: No valid QR code found on the back of the card.");
+        }
+    
+        ProviderProfile profile = providerProfileRepository.findById(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider profile not found with id: " + profileId));
+
+        if (profile.getProfileStatus() == ProfileStatus.PENDING_APPROVAL || profile.getProfileStatus() == ProfileStatus.APPROVED) {
+            throw new IllegalStateException("Profile cannot be edited while under review or after approval");
+        }
+
+        profile.setAadharBackUrl(fileUrl);
+        profile.setProfileStatus(ProfileStatus.INCOMPLETE);
+        profile.setIsApproved(false);
+        profile.setRejectionReason(null);
+        ProviderProfile updated = providerProfileRepository.save(profile);
+        return mapToProviderResponseDTO(updated);
+    }
+
     private ProviderResponseDTO mapToProviderResponseDTO(ProviderProfile profile) {
         ProviderResponseDTO dto = new ProviderResponseDTO(
                 profile.getId(),
@@ -461,6 +511,8 @@ public class ProviderService {
                 profile.getProfileStatus(),
                 profile.getExperienceYears(),
                 profile.getResumeUrl(),
+                profile.getAadharFrontUrl(),
+                profile.getAadharBackUrl(),
                 profile.getDemoVideoUrl(),
                 profile.getDescription(),
                 profile.getBasePrice(),

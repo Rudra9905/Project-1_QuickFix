@@ -31,4 +31,11 @@ public class ReviewController {
         List<ReviewResponseDTO> reviews = reviewService.getReviewsByProvider(providerId);
         return ResponseEntity.ok(reviews);
     }
+
+    @GetMapping("/recent")
+    // Lists recent reviews across all providers
+    public ResponseEntity<List<ReviewResponseDTO>> getRecentReviews(@RequestParam(defaultValue = "4") int limit) {
+        List<ReviewResponseDTO> reviews = reviewService.getRecentReviews(limit);
+        return ResponseEntity.ok(reviews);
+    }
 }

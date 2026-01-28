@@ -67,6 +67,54 @@ public class ProviderController {
         }
     }
 
+    @PostMapping("/{id}/aadhar-front")
+    // Upload Aadhar front image and attach to profile
+    public ResponseEntity<ProviderResponseDTO> uploadAadharFront(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            System.out.println("Uploading Aadhar front for provider ID: " + id);
+            String url = fileStorageService.storeFile(
+                    file,
+                    Set.of("image/jpeg", "image/png", "image/jpg", "application/pdf"),
+                    5 * 1024 * 1024, // 5MB
+                    "aadhar_front");
+            ProviderResponseDTO profile = providerService.uploadAadharFront(id, url);
+            System.out.println("Aadhar front uploaded successfully for provider ID: " + id);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            System.err.println("Error uploading Aadhar front for provider ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/{id}/aadhar-back")
+    // Upload Aadhar back image and attach to profile
+    public ResponseEntity<?> uploadAadharBack(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            System.out.println("Uploading Aadhar back for provider ID: " + id);
+            String url = fileStorageService.storeFile(
+                    file,
+                    Set.of("image/jpeg", "image/png", "image/jpg", "application/pdf"),
+                    5 * 1024 * 1024, // 5MB
+                    "aadhar_back");
+            // Pass file to service for QR validation
+            ProviderResponseDTO profile = providerService.uploadAadharBack(id, url, file);
+            System.out.println("Aadhar back uploaded successfully for provider ID: " + id);
+            return ResponseEntity.ok(profile);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Validation Error uploading Aadhar back: " + e.getMessage());
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage())); 
+        } catch (Exception e) {
+            System.err.println("Error uploading Aadhar back for provider ID " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PostMapping("/{id}/demo-video")
     // Upload demo video file (mp4) and attach to profile
     public ResponseEntity<ProviderResponseDTO> uploadDemoVideo(

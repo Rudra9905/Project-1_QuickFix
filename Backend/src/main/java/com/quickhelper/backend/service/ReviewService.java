@@ -64,6 +64,15 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    // Returns recent reviews across all providers
+    public List<ReviewResponseDTO> getRecentReviews(int limit) {
+        return reviewRepository.findAll().stream()
+                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+                .limit(limit)
+                .map(this::mapToReviewResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     // Recomputes the provider's average rating from all reviews
     @org.springframework.cache.annotation.CacheEvict(value = "provider_reviews", key = "#provider.id")

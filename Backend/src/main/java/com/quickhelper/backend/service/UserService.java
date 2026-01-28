@@ -64,7 +64,25 @@ public class UserService {
         return mapToUserResponseDTO(user);
     }
 
-    // Updates a user's city
+    // Updates a user's profile details
+    @Transactional
+    @CacheEvict(value = "users", key = "#id")
+    public UserResponseDTO updateUser(Long id, com.quickhelper.backend.dto.UserUpdateRequestDTO request) {
+        User user = findById(id);
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName());
+        }
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getCity() != null && !request.getCity().isBlank()) {
+            user.setCity(request.getCity());
+        }
+        User updatedUser = userRepository.save(user);
+        return mapToUserResponseDTO(updatedUser);
+    }
+
+    // Updates a user's city (Legacy, kept for backward compatibility if needed, or delegates to main update)
     @Transactional
     @CacheEvict(value = "users", key = "#id")
     public UserResponseDTO updateUserCity(Long id, String city) {
