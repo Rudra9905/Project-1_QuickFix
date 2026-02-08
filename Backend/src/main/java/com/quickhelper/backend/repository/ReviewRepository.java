@@ -13,6 +13,7 @@ import java.util.Optional;
 // JPA repository for reviews with helpers to fetch by booking/provider
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Review> findByBooking(Booking booking);
+    List<Review> findByBookingIn(List<Booking> bookings);
     List<Review> findByBooking_Provider(User provider);
     
     @org.springframework.data.jpa.repository.Query("SELECT AVG(r.rating) FROM Review r")

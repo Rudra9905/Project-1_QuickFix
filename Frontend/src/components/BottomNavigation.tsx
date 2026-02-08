@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { HomeIcon, CalendarIcon, UserIcon } from './icons/CustomIcons'
+import { HomeIcon, CalendarIcon, UserIcon, SparklesIcon } from './icons/CustomIcons'
 
 // Mobile bottom navigation bar for quick access to main sections
 export const BottomNavigation = () => {
@@ -7,6 +7,7 @@ export const BottomNavigation = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Home', icon: HomeIcon },
+    { path: '/solve-problem', label: 'AI Repair', icon: SparklesIcon },
     { path: '/bookings', label: 'Bookings', icon: CalendarIcon },
     { path: '/profile', label: 'Account', icon: UserIcon },
   ]

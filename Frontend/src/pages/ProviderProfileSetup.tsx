@@ -120,22 +120,61 @@ export const ProviderProfileSetup = () => {
                     locationLng: longitude.toString(),
                 }))
 
-                // Try to get address from coordinates (reverse geocoding)
+                // Try to get address from coordinates (reverse geocoding) with fallback
+                let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+                let success = false
+
+                // Strategy 1: BigDataCloud
                 try {
                     const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
                     )
-                    const data = await response.json()
-                    const address = data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-                    setFormData(prev => ({ ...prev, detectedAddress: address }))
-                    toast.success('Location detected successfully!')
-                } catch (error) {
-                    setFormData(prev => ({
-                        ...prev,
-                        detectedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-                    }))
-                    toast.success('Location coordinates captured!')
+                    if (response.ok) {
+                        const data = await response.json()
+                        const parts = [
+                            data.locality || data.city,
+                            data.principalSubdivision,
+                            data.countryName
+                        ].filter(Boolean)
+
+                        if (parts.length > 0) {
+                            address = parts.join(', ')
+                            success = true
+                        }
+                    }
+                } catch (e) {
+                    console.warn('BigDataCloud failed, trying fallback...', e)
                 }
+
+                // Strategy 2: Nominatim Fallback (if first failed)
+                if (!success) {
+                    try {
+                        const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+                        )
+                        if (response.ok) {
+                            const data = await response.json()
+                            const addr = data.address || {}
+                            const parts = [
+                                addr.road || addr.street,
+                                addr.suburb || addr.neighbourhood,
+                                addr.city || addr.town || addr.village,
+                                addr.state,
+                                addr.country
+                            ].filter(Boolean)
+
+                            if (parts.length > 0) {
+                                address = parts.join(', ')
+                                success = true
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Nominatim fallback failed:', e)
+                    }
+                }
+
+                setFormData(prev => ({ ...prev, detectedAddress: address }))
+                toast.success('Location detected successfully!')
                 setDetectingLocation(false)
             },
             (error) => {
@@ -207,6 +246,11 @@ export const ProviderProfileSetup = () => {
 
     const handleSubmit = async () => {
         if (!validate() || !user) return
+
+        if (!user.id) {
+            toast.error('Session invalid. Please log out and log in again.')
+            return
+        }
 
         setSaving(true)
         try {

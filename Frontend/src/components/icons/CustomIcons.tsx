@@ -636,3 +636,14 @@ export const ImageIcon: React.FC<IconProps> = ({ className = '', size = 24, colo
     <path d="M8 40L20 28L32 40L44 28L56 40" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
+
+export const SparklesIcon: React.FC<IconProps> = ({ className = '', size = 24, color = '#5B21B6' }) => (
+  <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M32 8L36 24L52 28L36 32L32 48L28 32L12 28L28 24L32 8Z" fill={color} opacity="0.2" />
+    <path d="M32 8L36 24L52 28L36 32L32 48L28 32L12 28L28 24L32 8Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 44L14 50L20 52L14 54L12 60L10 54L4 52L10 50L12 44Z" fill={color} opacity="0.2" />
+    <path d="M12 44L14 50L20 52L14 54L12 60L10 54L4 52L10 50L12 44Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M52 4L54 10L60 12L54 14L52 20L50 14L44 12L50 10L52 4Z" fill={color} opacity="0.2" />
+    <path d="M52 4L54 10L60 12L54 14L52 20L50 14L44 12L50 10L52 4Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)

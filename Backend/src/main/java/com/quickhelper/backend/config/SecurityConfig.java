@@ -62,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**").permitAll()
                         // Admin endpoints still restricted
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // AI Endpoint
+                        .requestMatchers("/api/ai/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

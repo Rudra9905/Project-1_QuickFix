@@ -61,6 +61,7 @@ export interface ProviderProfile {
   description?: string // Optional description of the provider's services
   basePrice?: number // Optional base price for the service
   rating: number // Average rating from customer reviews (0-5)
+  reviewCount?: number // Total number of reviews
   isAvailable: boolean // Whether the provider is currently available for bookings
   isApproved: boolean // Whether the provider has been approved by admin
   locationLat?: number // Optional latitude coordinate for provider's location
@@ -147,15 +148,23 @@ export interface Review {
   id: number // Unique identifier for the review
   bookingId: number // ID of the booking this review is for
   rating: number // Rating given by the user (typically 1-5)
+  punctualityRating?: number
+  proficiencyRating?: number
+  etiquetteRating?: number
   comment?: string // Optional text comment from the user
   createdAt: string // Timestamp when the review was created (ISO format)
   customerName?: string // Name of the reviewer
+  reviewerName?: string // Alias for customerName
+  posterName?: string // Alias for customerName
 }
 
 // ReviewRequest interface: data structure for creating a new review
 export interface ReviewRequest {
   bookingId: number // ID of the completed booking to review
   rating: number // Rating to give (typically 1-5)
+  punctualityRating?: number
+  proficiencyRating?: number
+  etiquetteRating?: number
   comment?: string // Optional text comment
 }
 

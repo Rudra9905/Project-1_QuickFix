@@ -38,7 +38,7 @@ export const Login = () => {
         if (storedUser) {
           const userData = JSON.parse(storedUser)
           if (userData.role === 'PROVIDER') {
-            navigate('/provider-setup')
+            navigate('/dashboard')
           } else {
             navigate('/dashboard')
           }

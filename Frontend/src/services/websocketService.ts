@@ -7,10 +7,12 @@ import type { Notification } from '../types/notification'
 
 // Helper function to get the API base URL from environment variables
 // @ts-ignore
+// Helper function to get the API base URL from environment variables
+// @ts-ignore
 const getApiUrl = (): string => {
   // @ts-ignore
-  // Returns the API base URL from environment variables, or defaults to localhost:8080/api
-  return import.meta.env ? import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api' : 'http://localhost:8080/api'
+  // Returns the API base URL from environment variables, or defaults to /api
+  return import.meta.env ? import.meta.env.VITE_API_BASE || import.meta.env.VITE_API_BASE_URL || '/api' : '/api'
 }
 
 // WebSocketService class manages real-time WebSocket connections for receiving notifications
@@ -82,15 +84,19 @@ class WebSocketService {
     }
 
     // Construct WebSocket URL with token parameter for authentication
+    // Construct WebSocket URL with token parameter for authentication
     let wsUrl: string
     const apiUrl = getApiUrl()
 
     // Determine WebSocket URL based on environment (development vs production)
-    if (apiUrl.includes('localhost:8080') || apiUrl.includes('127.0.0.1:8080')) {
+    if (apiUrl.startsWith('/') || !apiUrl.includes('http')) {
+      // Relative path (proxy setup) - use relative WebSocket URL
+      wsUrl = `/ws?token=${token}`
+    } else if (apiUrl.includes('localhost:8080') || apiUrl.includes('127.0.0.1:8080')) {
       // Development - direct connection to localhost
       wsUrl = `http://localhost:8080/ws?token=${token}`
     } else {
-      // Production - construct from API URL by removing /api suffix
+      // Production with absolute URL - construct from API URL
       const baseUrl = apiUrl.replace('/api', '')
       wsUrl = `${baseUrl}/ws?token=${token}`
     }

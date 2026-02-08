@@ -34,5 +34,31 @@ public interface ProviderProfileRepository extends JpaRepository<ProviderProfile
     @Query("SELECT DISTINCT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages")
     List<ProviderProfile> findAllWithImages();
 
+    // Haversine formula for distance calculation (in Kilometers)
+    @Query("SELECT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE " +
+           "p.profileStatus = 'APPROVED' AND " +
+           "p.locationLat IS NOT NULL AND p.locationLng IS NOT NULL AND " +
+           "(6371 * acos(cos(radians(:userLat)) * cos(radians(p.locationLat)) * " +
+           "cos(radians(p.locationLng) - radians(:userLng)) + " +
+           "sin(radians(:userLat)) * sin(radians(p.locationLat)))) <= :maxDistance")
+    List<ProviderProfile> findAllWithinDistance(
+            @Param("userLat") Double userLat,
+            @Param("userLng") Double userLng,
+            @Param("maxDistance") Double maxDistance);
+
+    @Query("SELECT p FROM ProviderProfile p LEFT JOIN FETCH p.portfolioImages WHERE " +
+           "p.profileStatus = 'APPROVED' AND " +
+           "p.serviceType = :serviceType AND " +
+           "p.isAvailable = true AND " +
+           "p.locationLat IS NOT NULL AND p.locationLng IS NOT NULL AND " +
+           "(6371 * acos(cos(radians(:userLat)) * cos(radians(p.locationLat)) * " +
+           "cos(radians(p.locationLng) - radians(:userLng)) + " +
+           "sin(radians(:userLat)) * sin(radians(p.locationLat)))) <= :maxDistance")
+    List<ProviderProfile> findByServiceTypeAndDistance(
+            @Param("serviceType") ServiceType serviceType,
+            @Param("userLat") Double userLat,
+            @Param("userLng") Double userLng,
+            @Param("maxDistance") Double maxDistance);
+
     Long countByIsApprovedTrue();
 }

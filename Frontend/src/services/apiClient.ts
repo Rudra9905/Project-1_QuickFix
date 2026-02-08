@@ -2,9 +2,10 @@
 import axios from 'axios'
 
 // Determine the API base URL based on environment variables
-// Use relative URL in development (via Vite proxy) or absolute URL from env
-// Falls back to localhost:8080/api if no environment variable is set
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:8080/api')
+// Use relative URL '/api' by default which works for:
+// 1. Development (via Vite proxy in vite.config.ts)
+// 2. Production (via Nginx proxy in nginx.conf)
+const API_BASE_URL = import.meta.env.VITE_API_BASE || '/api'
 
 // Create an axios instance with default configuration
 // This instance will be used for all API calls throughout the application

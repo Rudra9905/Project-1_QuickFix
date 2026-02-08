@@ -5,6 +5,8 @@ import type { User, AuthResponse } from '../types'
 // Import authentication service for API calls
 import { authService } from '../services/authService'
 // Import toast notification library for user feedback
+// Import user service for fetching user data
+import { userService } from '../services/userService'
 import toast from 'react-hot-toast'
 
 // AuthContextType interface: defines the shape of the authentication context
@@ -23,6 +25,7 @@ interface AuthContextType {
   logout: () => void // Function to log out the current user
   isAuthenticated: boolean // Boolean indicating if user is authenticated
   updateUser: (userData: Partial<User>) => void // Function to update user data
+  fetchUser: () => Promise<void> // Function to refresh user data
 }
 
 // Create the authentication context with undefined default value
@@ -46,7 +49,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUser && storedToken) {
       try {
         // Parse the stored user JSON and set it as the current user
-        setUser(JSON.parse(storedUser))
+        const parsedUser = JSON.parse(storedUser)
+        if (parsedUser && parsedUser.id) {
+          setUser(parsedUser)
+        } else {
+          // Invalid user data
+          throw new Error('Invalid session data')
+        }
       } catch (error) {
         // If parsing fails (corrupted data), clear the invalid data
         localStorage.removeItem('user')
@@ -58,15 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []) // Empty dependency array means this runs only once on mount
 
   // Login function: authenticates a user with email and password
-  // @param email - User's email address
-  // @param password - User's password
-  // @throws Error if login fails
   const login = async (email: string, password: string) => {
     try {
-      // Call the authentication service to log in
       const response: AuthResponse = await authService.login({ email, password })
-
-      // Extract user data from the response
       const userData: User = {
         id: response.id,
         name: response.name,
@@ -74,28 +77,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: response.role,
         city: response.city,
       }
-
-      // Update state with the authenticated user
       setUser(userData)
-      // Store user data and token in localStorage for persistence
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('token', response.token)
-
-      // Show success notification to the user
       toast.success('Login successful!')
     } catch (error: any) {
-      // Extract error message from response or use default message
       const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please check your credentials.'
-      // Show error notification to the user
       toast.error(errorMessage)
-      // Re-throw error so calling code can handle it if needed
       throw error
     }
   }
 
   // Register function: creates a new user account
-  // @param data - Registration data including name, email, password, role, etc.
-  // @throws Error if registration fails
   const register = async (data: {
     name: string
     email: string
@@ -105,10 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role: 'USER' | 'PROVIDER' | 'ADMIN'
   }) => {
     try {
-      // Call the authentication service to register a new user
       const response: AuthResponse = await authService.register(data)
-
-      // Extract user data from the response
       const userData: User = {
         id: response.id,
         name: response.name,
@@ -116,46 +106,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         role: response.role,
         city: response.city,
       }
-
-      // Update state with the newly registered user
       setUser(userData)
-      // Store user data and token in localStorage for persistence
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('token', response.token)
-
-      // Show success notification to the user
       toast.success('Registration successful!')
     } catch (error: any) {
-      // Extract error message from response or use default message
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.'
-      // Show error notification to the user
       toast.error(errorMessage)
-      // Re-throw error so calling code can handle it if needed
       throw error
     }
   }
 
   // Logout function: clears the current user session
   const logout = () => {
-    // Clear user from state
     setUser(null)
-    // Remove user data and token from localStorage
     localStorage.removeItem('user')
     localStorage.removeItem('token')
-    // Show success notification to the user
     toast.success('Logged out successfully')
   }
 
   // Update user function: updates the current user data
   const updateUser = (userData: Partial<User>) => {
     if (!user) return;
-
-    // Update the user state
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
-
-    // Update localStorage
     localStorage.setItem('user', JSON.stringify(updatedUser));
+  }
+
+  // Fetch updated user data from server
+  const fetchUser = async () => {
+    if (!user) return
+    try {
+      // Refresh user data from backend
+      const updatedUser = await userService.getUserById(user.id)
+
+      // Merge with existing session data to preserve tokens/flags if any (though backend should be source of truth)
+      const mergedUser = { ...user, ...updatedUser }
+
+      setUser(mergedUser)
+      localStorage.setItem('user', JSON.stringify(mergedUser))
+    } catch (error) {
+      console.error('Failed to refresh user data', error)
+      // Don't toast here as it might be background refresh
+    }
   }
 
   // Render the context provider with all authentication-related values
@@ -169,6 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout, // Logout function
         isAuthenticated: !!user, // Boolean: true if user exists, false otherwise
         updateUser, // Update user function
+        fetchUser, // Fetch user function
       }}
     >
       {children}

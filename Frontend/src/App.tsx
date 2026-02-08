@@ -22,6 +22,7 @@ import { ProviderProfileSetup } from './pages/ProviderProfileSetup'
 import { MultipleBookingDates } from './pages/MultipleBookingDates'
 import { ActiveJobPage } from './pages/ActiveJobPage'
 import { TrackServicePage } from './pages/TrackServicePage'
+import { AISolver } from './pages/AISolver'
 import { ChatProvider } from './contexts/ChatContext'
 import { ChatOverlay } from './components/ChatOverlay'
 
@@ -167,6 +168,16 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <TrackServicePage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/solve-problem"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <AISolver />
                       </Layout>
                     </ProtectedRoute>
                   }

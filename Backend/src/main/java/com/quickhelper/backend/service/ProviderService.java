@@ -305,38 +305,16 @@ public class ProviderService {
         
         // Validate inputs
         if (userLat == null || userLng == null || maxDistanceKm == null) {
-            System.out.println("Invalid input: null parameter detected");
-            return new ArrayList<>(); // Return empty list
+            return new ArrayList<>(); 
         }
         
-        if (Double.isNaN(userLat) || Double.isNaN(userLng) || Double.isNaN(maxDistanceKm)) {
-            System.out.println("Invalid input: NaN detected");
-            return new ArrayList<>(); // Return empty list
-        }
+        // Use Database Query for efficiency
+        List<ProviderProfile> profiles = providerProfileRepository.findAllWithinDistance(userLat, userLng, maxDistanceKm);
+        System.out.println("Providers within distance (DB Optimized): " + profiles.size());
         
-        if (Double.isInfinite(userLat) || Double.isInfinite(userLng) || Double.isInfinite(maxDistanceKm)) {
-            System.out.println("Invalid input: Infinite value detected");
-            return new ArrayList<>(); // Return empty list
-        }
-        
-        List<ProviderProfile> profiles = providerProfileRepository.findAllWithImages();
-        System.out.println("Total providers in database: " + profiles.size());
-        
-        List<ProviderResponseDTO> result = profiles.stream()
-                .filter(p -> p.getProfileStatus() == ProfileStatus.APPROVED)
-                .filter(profile -> profile.getLocationLat() != null && profile.getLocationLng() != null)
-                .filter(profile -> {
-                    double distance = DistanceCalculator.calculateDistance(
-                            userLat, userLng, 
-                            profile.getLocationLat(), profile.getLocationLng());
-                    System.out.println("Provider " + profile.getId() + " distance: " + distance + " km");
-                    return distance <= maxDistanceKm;
-                })
+        return profiles.stream()
                 .map(this::mapToProviderResponseDTO)
                 .collect(Collectors.toList());
-                
-        System.out.println("Providers within distance: " + result.size());
-        return result;
     }
 
     // Returns only available providers for a service type (optional city)
@@ -369,39 +347,16 @@ public class ProviderService {
         
         // Validate inputs
         if (userLat == null || userLng == null || maxDistanceKm == null) {
-            System.out.println("Invalid input: null parameter detected");
-            return new ArrayList<>(); // Return empty list
+            return new ArrayList<>();
         }
         
-        if (Double.isNaN(userLat) || Double.isNaN(userLng) || Double.isNaN(maxDistanceKm)) {
-            System.out.println("Invalid input: NaN detected");
-            return new ArrayList<>(); // Return empty list
-        }
+        // Use Database Query for efficiency
+        List<ProviderProfile> profiles = providerProfileRepository.findByServiceTypeAndDistance(serviceType, userLat, userLng, maxDistanceKm);
+        System.out.println("Available providers within distance (DB Optimized): " + profiles.size());
         
-        if (Double.isInfinite(userLat) || Double.isInfinite(userLng) || Double.isInfinite(maxDistanceKm)) {
-            System.out.println("Invalid input: Infinite value detected");
-            return new ArrayList<>(); // Return empty list
-        }
-        
-        List<ProviderProfile> profiles = providerProfileRepository
-                .findByServiceTypeAndIsAvailableTrue(serviceType);
-        System.out.println("Available providers for service " + serviceType + ": " + profiles.size());
-        
-        List<ProviderResponseDTO> result = profiles.stream()
-                .filter(p -> p.getProfileStatus() == ProfileStatus.APPROVED)
-                .filter(profile -> profile.getLocationLat() != null && profile.getLocationLng() != null)
-                .filter(profile -> {
-                    double distance = DistanceCalculator.calculateDistance(
-                            userLat, userLng,
-                            profile.getLocationLat(), profile.getLocationLng());
-                    System.out.println("Provider " + profile.getId() + " distance: " + distance + " km");
-                    return distance <= maxDistanceKm;
-                })
+        return profiles.stream()
                 .map(this::mapToProviderResponseDTO)
                 .collect(Collectors.toList());
-                
-        System.out.println("Available providers within distance: " + result.size());
-        return result;
     }
 
     // Fetches a provider profile by id

@@ -25,7 +25,7 @@ export const LandingPage = () => {
   useEffect(() => {
     const fetchStats = async (lat?: number, lng?: number) => {
       try {
-        let url = 'http://localhost:8080/api/stats';
+        let url = `${import.meta.env.VITE_API_BASE || '/api'}/stats`;
         if (lat && lng) {
           url += `?lat=${lat}&lng=${lng}`;
         }
@@ -43,7 +43,12 @@ export const LandingPage = () => {
       try {
         // Fetch reviews
         const reviews = await reviewService.getRecentReviews(4)
-        setRecentReviews(reviews)
+        if (Array.isArray(reviews)) {
+          setRecentReviews(reviews)
+        } else {
+          console.warn('Expected array for reviews but got:', typeof reviews)
+          setRecentReviews([])
+        }
 
         // Fetch providers and pick a random high-rated one to feature
         const providers = await providerService.getAllProviders()
@@ -144,7 +149,7 @@ export const LandingPage = () => {
                     <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 aspect-[4/3] bg-slate-900 border-4 border-white transform transition-transform duration-500 hover:scale-[1.01]">
                       <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-110"
-                        style={{ backgroundImage: `url(${featuredProvider.portfolioImages?.[0] ? `http://localhost:8080${featuredProvider.portfolioImages[0]}` : 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2069&auto=format&fit=crop'})` }}
+                        style={{ backgroundImage: `url(${featuredProvider.portfolioImages?.[0] ? `${import.meta.env.VITE_API_BASE || '/api'}${featuredProvider.portfolioImages[0]}` : 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=2069&auto=format&fit=crop'})` }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
                       </div>
@@ -286,7 +291,7 @@ export const LandingPage = () => {
           <div className="max-w-[1200px] mx-auto px-4 md:px-8">
             <h2 className="text-3xl font-bold text-slate-900 mb-10 text-center">What neighbors are saying</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentReviews.length > 0 ? (
+              {Array.isArray(recentReviews) && recentReviews.length > 0 ? (
                 recentReviews.map((review, i) => (
                   <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-4 hover:border-indigo-200 transition-colors">
                     <div className="flex text-yellow-400 text-sm gap-0.5">

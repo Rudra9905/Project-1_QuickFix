@@ -64,6 +64,10 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   }, [])
 
   const getRemainingTime = (createdAt: string) => {
+    // When running locally (Windows), backend sends local time (e.g. IST).
+    // Appending 'Z' forces it to be treated as UTC, which results in a +5:30 offset
+    // causing the timer to show ~5h 30m remaining instead of 5m.
+    // We revert to standard parsing which treats ISO strings without Z as local time.
     const created = new Date(createdAt)
     const expiresAt = new Date(created.getTime() + 5 * 60 * 1000) // 5 minutes
     const diff = expiresAt.getTime() - currentDate.getTime()
@@ -148,6 +152,12 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
 
       setBookings(bookingsData)
       setProviderProfile(providerData)
+
+      // Redirect if profile is missing or not approved
+      if (!providerData || providerData.profileStatus !== 'APPROVED') {
+        navigate('/provider-setup')
+        return
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error)
       toast.error('Failed to load dashboard data')

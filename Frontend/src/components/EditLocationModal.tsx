@@ -38,50 +38,78 @@ export const EditLocationModal = ({
   const [isSaving, setIsSaving] = useState(false)
   const mapRef = useRef<HTMLIFrameElement>(null)
 
-  // Reverse geocoding using OpenStreetMap Nominatim API
+  // Reverse geocoding with fallback strategy
   const reverseGeocode = async (lat: number, lng: number): Promise<AddressDetails | null> => {
+    // Strategy 1: BigDataCloud (Primary - Fast, no blocking)
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'QuickFix/1.0',
-          },
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        const city = data.locality || data.city || ''
+        const state = data.principalSubdivision || ''
+        const country = data.countryName || ''
+        const postcode = data.postcode || ''
+
+        const parts = [city, state, country].filter(Boolean)
+        // Only return if we actually found something
+        if (parts.length > 0) {
+          return {
+            street: '',
+            area: '',
+            city,
+            state,
+            country,
+            pincode: postcode,
+            fullAddress: parts.join(', '),
+          }
         }
+      }
+    } catch (e) {
+      console.warn('BigDataCloud geocoding failed, trying fallback:', e)
+    }
+
+    // Strategy 2: OpenStreetMap Nominatim (Fallback - detailed but strict)
+    try {
+      // Use a generic User-Agent or omit it to avoid blocking, 
+      // but strictly compliant apps should set one. 
+      // We'll try a standard browser fetch which sets its own UA.
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
       )
 
-      if (!response.ok) {
-        throw new Error('Reverse geocoding failed')
+      if (response.ok) {
+        const data = await response.json()
+        const address = data.address || {}
+
+        const parts: string[] = []
+        if (address.road || address.street) parts.push(address.road || address.street || '')
+        if (address.suburb || address.neighbourhood) parts.push(address.suburb || address.neighbourhood || '')
+        if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village || '')
+        if (address.state) parts.push(address.state)
+
+        const fullAddress = parts.filter(Boolean).join(', ')
+
+        if (fullAddress) {
+          return {
+            street: address.road || address.street || '',
+            area: address.suburb || address.neighbourhood || '',
+            city: address.city || address.town || address.village || '',
+            state: address.state || '',
+            country: address.country || '',
+            pincode: address.postcode || '',
+            fullAddress: fullAddress
+          }
+        }
       }
+    } catch (e) {
+      console.error('Nominatim fallback failed:', e)
+    }
 
-      const data = await response.json()
-      const address = data.address || {}
-
-      // Build full address string
-      const parts: string[] = []
-      if (address.road || address.street) parts.push(address.road || address.street || '')
-      if (address.suburb || address.neighbourhood) parts.push(address.suburb || address.neighbourhood || '')
-      if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village || '')
-      if (address.state) parts.push(address.state)
-      if (address.postcode) parts.push(address.postcode)
-      if (address.country) parts.push(address.country)
-
-      const fullAddress = parts.filter(Boolean).join(', ')
-
-      return {
-        street: address.road || address.street || '',
-        area: address.suburb || address.neighbourhood || address.quarter || '',
-        city: address.city || address.town || address.village || '',
-        state: address.state || address.region || '',
-        country: address.country || '',
-        pincode: address.postcode || '',
-        fullAddress: fullAddress || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-      }
-    } catch (error) {
-      console.error('Reverse geocoding error:', error)
-      return {
-        fullAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-      }
+    // Fallback: Coordinates
+    return {
+      fullAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     }
   }
 

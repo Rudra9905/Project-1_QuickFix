@@ -33,7 +33,7 @@ export type Booking = {
 }
 
 // API base URL: gets the base URL from environment variables or defaults to localhost
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080'
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
 
 // Generic API function: makes HTTP requests to the backend API
 // @param path - API endpoint path (e.g., '/api/auth/login')

@@ -466,7 +466,7 @@ const ProviderProfileView = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         if (e.target.files && e.target.files[0]) {
                           handleProfilePhotoUpload(e.target.files[0])
                         }

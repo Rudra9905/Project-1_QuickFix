@@ -88,44 +88,44 @@ cd Project-1_QuickFix
 ```
 
 ### Step 5: Configure Environment Variables
-You need to set up the `.env` files for production.
+You need to set up the `.env` file in the **project root** directory (where `docker-compose.yml` is).
 
-**Backend Configuration:**
-1.  Go to Backend: `cd Backend`
-2.  Create/Edit .env: `nano .env`
-3.  Paste your production configuration. **Important Update for Docker:**
+1.  Create `.env` in the root: `nano .env`
+2.  Paste your production configuration. **Ensure variable names match exactly:**
     ```ini
     # Database (Use your Neon/External URL)
-    DATABASE_URL=jdbc:postgresql://your-neon-db-url...
+    DB_URL=jdbc:postgresql://your-neon-db-url...
+    DB_USERNAME=your_db_username
+    DB_PASSWORD=your_db_password
     
-    # Redis (Should match the service name in docker-compose.yml)
-    SPRING_DATA_REDIS_HOST=redis
-    SPRING_DATA_REDIS_PORT=6379
+    # CORS (Your EC2 IP or Domain)
+    CORS_ALLOWED_ORIGINS=http://<YOUR_EC2_PUBLIC_IP>
+
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME=...
+    CLOUDINARY_API_KEY=...
+    CLOUDINARY_API_SECRET=...
+
+    # Stripe
+    STRIPE_SECRET_KEY=...
+    
+    # AI
+    GEMINI_API_KEY=...
     ```
-4.  Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+3.  Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
-**Frontend Configuration:**
-1.  Go to Frontend: `cd ../Frontend`
-2.  Create .env: `nano .env`
-3.  Set the API URL to your EC2 Public IP or Domain:
-    ```ini
-    VITE_API_BASE=http://<YOUR_EC2_PUBLIC_IP>:8080
-    ```
-    *(Or if using Nginx reverse proxy, just `/api` or `http://<IP>/api`)*.
+### Step 6: Update Frontend API URL
+The frontend needs to know where the API is. Since we are using Docker Compose, the build process needs this variable.
 
-### Step 6: Update docker-compose for Production
-We want the Frontend to run on Port 80, not 3000.
-
-1.  Go back to root: `cd ..`
-2.  Edit docker-compose: `nano docker-compose.yml`
-3.  Change the Frontend ports section:
+1.  Edit `docker-compose.yml`: `nano docker-compose.yml`
+2.  Find the `frontend` service and check the `args`:
     ```yaml
     frontend:
-      # ...
-      ports:
-        - "80:80"  # Change from "3000:80" to "80:80"
+      build:
+        args:
+          - VITE_API_BASE=/api
     ```
-4.  Save and exit.
+    *This is already set to `/api`, which works perfectly with the Nginx reverse proxy setup. No changes needed usually.*
 
 ### Step 7: Build and Run
 ```bash

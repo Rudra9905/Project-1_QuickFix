@@ -11,6 +11,8 @@ import com.quickhelper.backend.model.User;
 import com.quickhelper.backend.model.UserRole;
 import com.quickhelper.backend.model.ProfileStatus;
 import com.quickhelper.backend.model.ProviderProfile;
+import com.quickhelper.backend.dto.NotificationEvent;
+import com.quickhelper.backend.model.NotificationType;
 import com.quickhelper.backend.repository.BookingRepository;
 import com.quickhelper.backend.repository.UserRepository;
 import com.quickhelper.backend.repository.ProviderProfileRepository;
@@ -20,9 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
@@ -36,6 +40,7 @@ public class BookingService {
     private final ProviderProfileRepository providerProfileRepository;
     private final com.quickhelper.backend.repository.ReviewRepository reviewRepository;
     private final NotificationService notificationService;
+    private final NotificationProducer notificationProducer;
     private final StripeService stripeService;
     private final org.springframework.cache.CacheManager cacheManager;
     
@@ -117,12 +122,16 @@ public class BookingService {
         try {
             // Send notification to provider
             System.out.println("Sending notification to provider: " + provider.getId());
-            notificationService.notifyBookingRequestSent(
-                    user.getId(),
+            notificationProducer.sendNotification(new NotificationEvent(
                     provider.getId(),
-                    saved.getId(),
-                    request.getServiceType().toString()
-            );
+                    UserRole.PROVIDER,
+                    NotificationType.NEW_BOOKING_REQUEST,
+                    "New Booking Request",
+                    "You have received a new " + request.getServiceType().toString() + " service request",
+                    false, // isRead
+                    true,  // isHighPriority
+                    saved.getId()
+            ));
             System.out.println("Provider notification sent successfully");
         } catch (Exception e) {
             System.err.println("Error sending provider notification: " + e.getMessage());
@@ -133,15 +142,16 @@ public class BookingService {
         try {
             // Send notification to user
             System.out.println("Sending notification to user: " + user.getId());
-            notificationService.createAndSendNotification(
+            notificationProducer.sendNotification(new NotificationEvent(
                     user.getId(),
                     UserRole.USER,
-                    com.quickhelper.backend.model.NotificationType.BOOKING_REQUEST_SENT,
+                    NotificationType.BOOKING_REQUEST_SENT,
                     "Booking Request Sent",
                     "Your booking request has been sent to " + provider.getName(),
-                    false,
+                    false, // isRead
+                    false, // isHighPriority
                     saved.getId()
-            );
+            ));
             System.out.println("User notification sent successfully");
         } catch (Exception e) {
             System.err.println("Error sending user notification: " + e.getMessage());
@@ -169,11 +179,17 @@ public class BookingService {
                 processRefund(booking);
                 
                 // Notify user
-                 notificationService.notifyBookingRejected(
+                // Notify user
+                notificationProducer.sendNotification(new NotificationEvent(
                     booking.getUser().getId(),
-                    booking.getId(),
-                    booking.getProvider().getName()
-                );
+                    UserRole.USER,
+                    NotificationType.BOOKING_REJECTED,
+                    "Booking Rejected",
+                    booking.getProvider().getName() + " has rejected your booking request",
+                    false,
+                    true,
+                    booking.getId()
+                ));
             }
         });
     }
@@ -182,8 +198,19 @@ public class BookingService {
     public List<BookingResponseDTO> getBookingsByUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        return bookingRepository.findByUser(user).stream()
-                .map(this::mapToBookingResponseDTO)
+        List<Booking> bookings = bookingRepository.findByUser(user);
+
+        if (bookings.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        // Batch fetch reviews to avoid N+1 problem
+        List<com.quickhelper.backend.model.Review> reviews = reviewRepository.findByBookingIn(bookings);
+        Map<Long, com.quickhelper.backend.model.Review> reviewMap = reviews.stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), Function.identity(), (existing, replacement) -> existing));
+
+        return bookings.stream()
+                .map(b -> mapToBookingResponseDTO(b, reviewMap.get(b.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -191,8 +218,19 @@ public class BookingService {
     public List<BookingResponseDTO> getBookingsByProvider(Long providerId) {
         User provider = userRepository.findById(providerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found with id: " + providerId));
-        return bookingRepository.findByProvider(provider).stream()
-                .map(this::mapToBookingResponseDTO)
+        List<Booking> bookings = bookingRepository.findByProvider(provider);
+
+        if (bookings.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        // Batch fetch reviews to avoid N+1 problem
+        List<com.quickhelper.backend.model.Review> reviews = reviewRepository.findByBookingIn(bookings);
+        Map<Long, com.quickhelper.backend.model.Review> reviewMap = reviews.stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), Function.identity(), (existing, replacement) -> existing));
+
+        return bookings.stream()
+                .map(b -> mapToBookingResponseDTO(b, reviewMap.get(b.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -212,21 +250,28 @@ public class BookingService {
         utils_evictBookingCaches(updated);
         
         // Send notifications
-        notificationService.notifyBookingAccepted(
+        // Send notifications
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                updated.getId(),
-                booking.getProvider().getName()
-        );
+                UserRole.USER,
+                NotificationType.BOOKING_ACCEPTED,
+                "Booking Accepted",
+                booking.getProvider().getName() + " has accepted your booking request",
+                false,
+                false,
+                updated.getId()
+        ));
         
-        notificationService.createAndSendNotification(
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getProvider().getId(),
                 UserRole.PROVIDER,
-                com.quickhelper.backend.model.NotificationType.JOB_ACCEPTED,
+                NotificationType.JOB_ACCEPTED,
                 "Job Accepted",
                 "You have accepted the booking request from " + booking.getUser().getName(),
                 false,
+                false,
                 updated.getId()
-        );
+        ));
         
         return mapToBookingResponseDTO(updated);
     }
@@ -247,11 +292,16 @@ public class BookingService {
         
         // Send notification to user
         // Send notification to user
-        notificationService.notifyBookingRejected(
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                updated.getId(),
-                booking.getProvider().getName()
-        );
+                UserRole.USER,
+                NotificationType.BOOKING_REJECTED,
+                "Booking Rejected",
+                booking.getProvider().getName() + " has rejected your booking request",
+                false,
+                true,
+                updated.getId()
+        ));
 
         // Process Refund
         processRefund(booking);
@@ -275,11 +325,16 @@ public class BookingService {
         
         // Send notification to provider if cancelled by user
         if (booking.getUser().getRole() == com.quickhelper.backend.model.UserRole.USER) {
-            notificationService.notifyBookingCancelled(
+            notificationProducer.sendNotification(new NotificationEvent(
                     booking.getProvider().getId(),
-                    updated.getId(),
-                    booking.getUser().getName()
-            );
+                    UserRole.PROVIDER,
+                    NotificationType.BOOKING_CANCELLED,
+                    "Booking Cancelled",
+                    booking.getUser().getName() + " has cancelled the booking",
+                    false,
+                    true,
+                    updated.getId()
+            ));
         }
 
         // Refund Logic
@@ -304,19 +359,29 @@ public class BookingService {
         utils_evictBookingCaches(updated);
         
         // Send notifications
-        notificationService.notifyServiceCompleted(
+        // Send notifications
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                booking.getProvider().getId(),
-                updated.getId(),
-                booking.getUser().getName()
-        );
+                UserRole.USER,
+                NotificationType.SERVICE_COMPLETED,
+                "Service Completed",
+                "Your service has been completed. Please rate your experience.",
+                false,
+                false,
+                updated.getId()
+        ));
         
         // Notify provider about earnings
-        notificationService.notifyEarningsCredited(
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getProvider().getId(),
-                updated.getId(),
-                100.0 // Placeholder amount
-        );
+                UserRole.PROVIDER,
+                NotificationType.JOB_COMPLETED, // Using JOB_COMPLETED for earnings info as placeholder or separate EARNINGS type
+                "Earnings Credited",
+                "₹" + 100.0 + " has been credited to your account",
+                false,
+                false,
+                updated.getId()
+        ));
 
         return mapToBookingResponseDTO(booking);
     }
@@ -331,11 +396,17 @@ public class BookingService {
         }
         
         // Send notification to user
-        notificationService.notifyProviderOnWay(
+        // Send notification to user
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                booking.getId(),
-                booking.getProvider().getName()
-        );
+                UserRole.USER,
+                NotificationType.PROVIDER_ON_WAY,
+                "Provider On The Way",
+                booking.getProvider().getName() + " is on the way to your location",
+                false,
+                false,
+                booking.getId()
+        ));
         
         return mapToBookingResponseDTO(booking);
     }
@@ -358,11 +429,17 @@ public class BookingService {
         utils_evictBookingCaches(saved);
         
         // Notify user
-        notificationService.notifyProviderArrived(
+        // Notify user
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                booking.getId(),
-                booking.getProvider().getName()
-        ); // Re-using this notification or creating a new specific one ideally
+                UserRole.USER,
+                NotificationType.PROVIDER_ARRIVED,
+                "Provider Arrived",
+                booking.getProvider().getName() + " has arrived at your location",
+                false,
+                false,
+                booking.getId()
+        )); // Re-using this notification or creating a new specific one ideally
 
         return mapToBookingResponseDTO(saved);
     }
@@ -399,7 +476,17 @@ public class BookingService {
         utils_evictBookingCaches(saved);
 
         // Send notification
-        notificationService.notifyServiceStarted(booking.getUser().getId(), booking.getId(), booking.getProvider().getName());
+        // Send notification
+        notificationProducer.sendNotification(new NotificationEvent(
+                booking.getUser().getId(),
+                UserRole.USER,
+                NotificationType.SERVICE_STARTED,
+                "Service Started",
+                booking.getProvider().getName() + " has started the service",
+                false,
+                false,
+                booking.getId()
+        ));
         
         return mapToBookingResponseDTO(saved);
     }
@@ -415,17 +502,29 @@ public class BookingService {
         }
 
         // Send notification to user
-        notificationService.notifyPaymentConfirmed(
+        // Send notification to user
+        notificationProducer.sendNotification(new NotificationEvent(
                 booking.getUser().getId(),
-                booking.getId(),
-                100.0 // Placeholder amount
-        );
+                UserRole.USER,
+                NotificationType.PAYMENT_CONFIRMED,
+                "Payment Confirmed",
+                "Payment of ₹" + 100.0 + " has been confirmed",
+                false,
+                false,
+                booking.getId()
+        ));
         
         return mapToBookingResponseDTO(booking);
     }
 
-    // Maps Booking entity to API response DTO
+    // Maps Booking entity to API response DTO - loads review from DB
     private BookingResponseDTO mapToBookingResponseDTO(Booking booking) {
+        com.quickhelper.backend.model.Review review = reviewRepository.findByBooking(booking).orElse(null);
+        return mapToBookingResponseDTO(booking, review);
+    }
+
+    // Maps Booking entity to API response DTO - uses provided review (can be null)
+    private BookingResponseDTO mapToBookingResponseDTO(Booking booking, com.quickhelper.backend.model.Review review) {
         UserResponseDTO userDTO = new UserResponseDTO();
         userDTO.setId(booking.getUser().getId());
         userDTO.setName(booking.getUser().getName());
@@ -444,9 +543,7 @@ public class BookingService {
 
         providerDTO.setPhone(booking.getProvider().getPhone());
 
-        Long reviewId = reviewRepository.findByBooking(booking)
-                .map(com.quickhelper.backend.model.Review::getId)
-                .orElse(null);
+        Long reviewId = (review != null) ? review.getId() : null;
 
         return new BookingResponseDTO(
                 booking.getId(),
@@ -476,11 +573,17 @@ public class BookingService {
                 System.out.println("Refund successful");
 
                 // Notify user about refund
-                notificationService.notifyRefundProcessed(
+                // Notify user about refund
+                notificationProducer.sendNotification(new NotificationEvent(
                         booking.getUser().getId(),
-                        booking.getId(),
-                        0.0 // Placeholder amount
-                );
+                        UserRole.USER,
+                        NotificationType.REFUND_PROCESSED,
+                        "Refund Initiated",
+                        "A refund has been initiated for your booking.",
+                        false,
+                        false,
+                        booking.getId()
+                ));
             } catch (Exception e) {
                 System.err.println("Error processing refund: " + e.getMessage());
                 e.printStackTrace();
