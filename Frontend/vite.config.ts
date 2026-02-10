@@ -30,6 +30,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Catch auth requests that might not have the /api prefix and rewrite them
+      '/auth': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path: string) => `/api${path}`,
+      },
       // Allow accessing uploaded files (resumes/videos) via the dev server,
       // so links like /uploads/resumes/... work in the browser during development.
       '/uploads': {

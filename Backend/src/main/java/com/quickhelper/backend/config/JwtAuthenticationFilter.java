@@ -30,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         // Skip JWT validation for authentication endpoints and WebSocket
         String path = request.getRequestURI();
-        if (path.startsWith("/api/auth") || path.startsWith("/ws")) {
+        if (path.startsWith("/api/auth") || path.startsWith("/auth") || path.startsWith("/ws")) {
             filterChain.doFilter(request, response);
             return;
         }

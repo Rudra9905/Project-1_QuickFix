@@ -19,10 +19,19 @@ public class StripeService {
 
     @PostConstruct
     public void init() {
-        Stripe.apiKey = stripeSecretKey;
+        if (stripeSecretKey == null || stripeSecretKey.trim().isEmpty() || stripeSecretKey.startsWith("${")) {
+            System.err.println("CRITICAL: STRIPE_SECRET_KEY is missing or invalid. Payments will fail.");
+        } else {
+            Stripe.apiKey = stripeSecretKey;
+            System.out.println("Stripe API Key initialized (Length: " + stripeSecretKey.length() + ")");
+        }
     }
 
     public PaymentIntent createPaymentIntent(long amount, String currency) throws StripeException {
+        if (stripeSecretKey == null || stripeSecretKey.trim().isEmpty() || stripeSecretKey.startsWith("${")) {
+            throw new StripeException("Stripe API Key is missing. Please check .env file.", "req_missing_key", "missing_key", 500) {};
+        }
+
         PaymentIntentCreateParams params =
                 PaymentIntentCreateParams.builder()
                         .setAmount(amount)

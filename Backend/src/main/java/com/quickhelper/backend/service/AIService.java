@@ -93,7 +93,8 @@ public class AIService {
         Map<String, Object> textPart = new HashMap<>();
         textPart.put("text", "Analyze this image. Identify the household maintenance issue (e.g., leaking pipe, spark, broken furniture). " +
                 "Then, determine the best service provider type for this issue from this exact list: [PLUMBER, ELECTRICIAN, CLEANER, LAUNDRY, OTHER]. " +
-                "Return result strictly as JSON with keys: 'description' (short text) and 'serviceType' (enum value). " +
+                "Return result strictly as valid JSON (RFC 8259) with double quotes for all keys and string values. " +
+                "Do not use single quotes for keys or string values. " +
                 "Do NOT use markdown code blocks.");
 
         Map<String, Object> content = new HashMap<>();
@@ -115,7 +116,8 @@ public class AIService {
 
     private AnalyzedResult parseGeminiResponse(String jsonResponse) {
         try {
-            JsonNode root = objectMapper.readTree(jsonResponse);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(jsonResponse);
             // Navigate: candidates[0].content.parts[0].text
             JsonNode candidates = root.path("candidates");
             if (candidates.isArray() && !candidates.isEmpty()) {
@@ -127,7 +129,14 @@ public class AIService {
                     // Clean markdown if present (```json ... ```)
                     text = text.replaceAll("```json", "").replaceAll("```", "").trim();
                     
-                    JsonNode resultNode = objectMapper.readTree(text);
+                    // Try to fix common JSON issues if standard parsing fails
+                    if (text.startsWith("'") || text.contains("': '")) {
+                         // Replace single quotes with double quotes for keys and simple values
+                         // This is a basic heuristic fallback
+                         text = text.replace("'", "\"");
+                    }
+
+                    JsonNode resultNode = mapper.readTree(text);
                     String description = resultNode.path("description").asText("Unknown Issue");
                     String serviceTypeStr = resultNode.path("serviceType").asText("OTHER").toUpperCase();
                     

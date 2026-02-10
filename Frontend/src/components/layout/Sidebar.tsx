@@ -22,7 +22,7 @@ const providerMenuItems: SidebarItem[] = [
 // User menu items
 const userMenuItems: SidebarItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { path: '/solve-problem', label: 'AI Repair', icon: 'auto_fix' },
+  { path: '/solve-problem', label: 'AI Assistant', icon: 'auto_fix' },
   { path: '/providers', label: 'Providers', icon: 'group' },
   { path: '/bookings', label: 'Bookings', icon: 'calendar_month' },
   { path: '/reviews', label: 'Reviews', icon: 'star' },
@@ -63,7 +63,7 @@ export const Sidebar = () => {
     if (item.path === '/bookings') {
       return true
     }
-    if (item.path === '/dashboard' || item.path === '/profile') {
+    if (item.path === '/dashboard' || item.path === '/profile' || item.path === '/solve-problem') {
       return true
     }
     return false

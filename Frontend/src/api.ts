@@ -32,8 +32,8 @@ export type Booking = {
   status: string // Current booking status
 }
 
-// API base URL: gets the base URL from environment variables or defaults to localhost
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
+// API base URL: empty because all paths below already include the /api prefix
+const API_BASE = ''
 
 // Generic API function: makes HTTP requests to the backend API
 // @param path - API endpoint path (e.g., '/api/auth/login')
