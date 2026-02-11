@@ -23,6 +23,9 @@ WORKDIR /app
 # Create uploads directory
 RUN mkdir -p /app/uploads
 
+# Install tzdata for timezone support
+RUN apk add --no-cache tzdata
+
 # Copy the built JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
