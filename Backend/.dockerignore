@@ -1,0 +1,14 @@
+target/
+.idea/
+.vscode/
+.mvn/
+.git/
+.gitignore
+.env
+*.log
+*.iml
+backend-server.log
+HELP.md
+README.md
+DESIGN_SYSTEM.md
+NOTIFICATION_SYSTEM.md

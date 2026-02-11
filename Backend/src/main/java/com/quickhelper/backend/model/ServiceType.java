@@ -5,6 +5,8 @@ public enum ServiceType {
     PLUMBER,
     ELECTRICIAN,
     CLEANER,
+    CARPENTER,
+    PAINTER,
     LAUNDRY,
     OTHER
 }

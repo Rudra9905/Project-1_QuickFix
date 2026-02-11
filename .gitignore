@@ -41,5 +41,8 @@ build/
 .env.production
 .env.development
 
-# Do not ignore .env.example (it's meant to be committed)
+# Do not ignore .env.example and .env.docker (templates meant to be committed)
 !.env.example
+.env.docker
+
+.env*
