@@ -1,41 +1,5 @@
 services:
   # ============================================
-  # Infrastructure Services
-  # ============================================
-
-  redis:
-    image: redis:7-alpine
-    container_name: quickfix-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: quickfix-rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-
-  # ============================================
   # Application Services
   # ============================================
 
@@ -49,12 +13,6 @@ services:
       - ./Backend/.env
     environment:
       # Docker-network overrides
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       jpa.ddl-auto: update
       TZ: Asia/Kolkata
@@ -62,11 +20,6 @@ services:
       - "8080:8080"
     volumes:
       - uploads_data:/app/uploads
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
 
   frontend:
     build:
@@ -83,6 +36,4 @@ services:
       - backend
 
 volumes:
-  redis_data:
-  rabbitmq_data:
   uploads_data:

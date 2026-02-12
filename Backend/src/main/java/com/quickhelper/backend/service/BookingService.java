@@ -180,16 +180,20 @@ public class BookingService {
                 
                 // Notify user
                 // Notify user
-                notificationProducer.sendNotification(new NotificationEvent(
-                    booking.getUser().getId(),
-                    UserRole.USER,
-                    NotificationType.BOOKING_REJECTED,
-                    "Booking Rejected",
-                    booking.getProvider().getName() + " has rejected your booking request",
-                    false,
-                    true,
-                    booking.getId()
-                ));
+                try {
+                    notificationProducer.sendNotification(new NotificationEvent(
+                        booking.getUser().getId(),
+                        UserRole.USER,
+                        NotificationType.BOOKING_REJECTED,
+                        "Booking Rejected",
+                        booking.getProvider().getName() + " has rejected your booking request",
+                        false,
+                        true,
+                        booking.getId()
+                    ));
+                } catch (Exception e) {
+                    System.err.println("Failed to send auto-rejection notification: " + e.getMessage());
+                }
             }
         });
     }
@@ -251,27 +255,35 @@ public class BookingService {
         
         // Send notifications
         // Send notifications
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.BOOKING_ACCEPTED,
-                "Booking Accepted",
-                booking.getProvider().getName() + " has accepted your booking request",
-                false,
-                false,
-                updated.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.BOOKING_ACCEPTED,
+                    "Booking Accepted",
+                    booking.getProvider().getName() + " has accepted your booking request",
+                    false,
+                    false,
+                    updated.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send booking accepted notification to user: " + e.getMessage());
+        }
         
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getProvider().getId(),
-                UserRole.PROVIDER,
-                NotificationType.JOB_ACCEPTED,
-                "Job Accepted",
-                "You have accepted the booking request from " + booking.getUser().getName(),
-                false,
-                false,
-                updated.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getProvider().getId(),
+                    UserRole.PROVIDER,
+                    NotificationType.JOB_ACCEPTED,
+                    "Job Accepted",
+                    "You have accepted the booking request from " + booking.getUser().getName(),
+                    false,
+                    false,
+                    updated.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send job accepted notification to provider: " + e.getMessage());
+        }
         
         return mapToBookingResponseDTO(updated);
     }
@@ -292,16 +304,20 @@ public class BookingService {
         
         // Send notification to user
         // Send notification to user
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.BOOKING_REJECTED,
-                "Booking Rejected",
-                booking.getProvider().getName() + " has rejected your booking request",
-                false,
-                true,
-                updated.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.BOOKING_REJECTED,
+                    "Booking Rejected",
+                    booking.getProvider().getName() + " has rejected your booking request",
+                    false,
+                    true,
+                    updated.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send booking rejected notification: " + e.getMessage());
+        }
 
         // Process Refund
         processRefund(booking);
@@ -325,16 +341,20 @@ public class BookingService {
         
         // Send notification to provider if cancelled by user
         if (booking.getUser().getRole() == com.quickhelper.backend.model.UserRole.USER) {
-            notificationProducer.sendNotification(new NotificationEvent(
-                    booking.getProvider().getId(),
-                    UserRole.PROVIDER,
-                    NotificationType.BOOKING_CANCELLED,
-                    "Booking Cancelled",
-                    booking.getUser().getName() + " has cancelled the booking",
-                    false,
-                    true,
-                    updated.getId()
-            ));
+            try {
+                notificationProducer.sendNotification(new NotificationEvent(
+                        booking.getProvider().getId(),
+                        UserRole.PROVIDER,
+                        NotificationType.BOOKING_CANCELLED,
+                        "Booking Cancelled",
+                        booking.getUser().getName() + " has cancelled the booking",
+                        false,
+                        true,
+                        updated.getId()
+                ));
+            } catch (Exception e) {
+                System.err.println("Failed to send booking cancelled notification: " + e.getMessage());
+            }
         }
 
         // Refund Logic
@@ -360,28 +380,36 @@ public class BookingService {
         
         // Send notifications
         // Send notifications
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.SERVICE_COMPLETED,
-                "Service Completed",
-                "Your service has been completed. Please rate your experience.",
-                false,
-                false,
-                updated.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.SERVICE_COMPLETED,
+                    "Service Completed",
+                    "Your service has been completed. Please rate your experience.",
+                    false,
+                    false,
+                    updated.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send service completed notification to user: " + e.getMessage());
+        }
         
         // Notify provider about earnings
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getProvider().getId(),
-                UserRole.PROVIDER,
-                NotificationType.JOB_COMPLETED, // Using JOB_COMPLETED for earnings info as placeholder or separate EARNINGS type
-                "Earnings Credited",
-                "₹" + 100.0 + " has been credited to your account",
-                false,
-                false,
-                updated.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getProvider().getId(),
+                    UserRole.PROVIDER,
+                    NotificationType.JOB_COMPLETED, // Using JOB_COMPLETED for earnings info as placeholder or separate EARNINGS type
+                    "Earnings Credited",
+                    "₹" + 100.0 + " has been credited to your account",
+                    false,
+                    false,
+                    updated.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send earnings notification to provider: " + e.getMessage());
+        }
 
         return mapToBookingResponseDTO(booking);
     }
@@ -397,16 +425,20 @@ public class BookingService {
         
         // Send notification to user
         // Send notification to user
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.PROVIDER_ON_WAY,
-                "Provider On The Way",
-                booking.getProvider().getName() + " is on the way to your location",
-                false,
-                false,
-                booking.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.PROVIDER_ON_WAY,
+                    "Provider On The Way",
+                    booking.getProvider().getName() + " is on the way to your location",
+                    false,
+                    false,
+                    booking.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send provider on way notification: " + e.getMessage());
+        }
         
         return mapToBookingResponseDTO(booking);
     }
@@ -430,16 +462,20 @@ public class BookingService {
         
         // Notify user
         // Notify user
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.PROVIDER_ARRIVED,
-                "Provider Arrived",
-                booking.getProvider().getName() + " has arrived at your location",
-                false,
-                false,
-                booking.getId()
-        )); // Re-using this notification or creating a new specific one ideally
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.PROVIDER_ARRIVED,
+                    "Provider Arrived",
+                    booking.getProvider().getName() + " has arrived at your location",
+                    false,
+                    false,
+                    booking.getId()
+            )); // Re-using this notification or creating a new specific one ideally
+        } catch (Exception e) {
+            System.err.println("Failed to send provider arrived notification: " + e.getMessage());
+        }
 
         return mapToBookingResponseDTO(saved);
     }
@@ -477,16 +513,20 @@ public class BookingService {
 
         // Send notification
         // Send notification
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.SERVICE_STARTED,
-                "Service Started",
-                booking.getProvider().getName() + " has started the service",
-                false,
-                false,
-                booking.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.SERVICE_STARTED,
+                    "Service Started",
+                    booking.getProvider().getName() + " has started the service",
+                    false,
+                    false,
+                    booking.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send service started notification: " + e.getMessage());
+        }
         
         return mapToBookingResponseDTO(saved);
     }
@@ -503,16 +543,20 @@ public class BookingService {
 
         // Send notification to user
         // Send notification to user
-        notificationProducer.sendNotification(new NotificationEvent(
-                booking.getUser().getId(),
-                UserRole.USER,
-                NotificationType.PAYMENT_CONFIRMED,
-                "Payment Confirmed",
-                "Payment of ₹" + 100.0 + " has been confirmed",
-                false,
-                false,
-                booking.getId()
-        ));
+        try {
+            notificationProducer.sendNotification(new NotificationEvent(
+                    booking.getUser().getId(),
+                    UserRole.USER,
+                    NotificationType.PAYMENT_CONFIRMED,
+                    "Payment Confirmed",
+                    "Payment of ₹" + 100.0 + " has been confirmed",
+                    false,
+                    false,
+                    booking.getId()
+            ));
+        } catch (Exception e) {
+            System.err.println("Failed to send payment confirmed notification: " + e.getMessage());
+        }
         
         return mapToBookingResponseDTO(booking);
     }
