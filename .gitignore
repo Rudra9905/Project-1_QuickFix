@@ -46,3 +46,6 @@ build/
 .env.docker
 
 .env*
+.env
+*.env.
+

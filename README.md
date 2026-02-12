@@ -135,7 +135,9 @@ git clone https://github.com/yourusername/QuickFix.git
 cd QuickFix
 
 Setup environment variables
-cp .env.example Backend/.env
+cp .env.example .env
+
+Note: `spring-dotenv` loads `.env` from the repo root (where this README lives).
 
 Update the .env file with your credentials.
 
@@ -163,6 +165,12 @@ npm run dev
 DB_URL – PostgreSQL JDBC URL
 DB_USERNAME – Database username
 DB_PASSWORD – Database password
+REDIS_URL – Redis connection URL (use rediss:// for TLS)
+REDIS_USERNAME – Redis username (if required)
+REDIS_PASSWORD – Redis password (if required)
+REDIS_SSL – Set to true for TLS when using redis://
+RABBIT_URL – RabbitMQ connection URL (use amqps:// for TLS)
+RABBIT_SSL – Set to true for TLS when using amqp://
 CLOUDINARY_CLOUD_NAME – Cloudinary cloud name
 CLOUDINARY_API_KEY – Cloudinary API key
 CLOUDINARY_API_SECRET – Cloudinary API secret
