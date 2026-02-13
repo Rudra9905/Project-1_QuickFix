@@ -58,9 +58,6 @@ export const Navbar = ({ onEditAddress, address }: NavbarProps) => {
                 {user.name?.split(' ')[0] || user.name}
               </span>
             </div>
-            <div className="md:hidden text-white ml-4">
-              <span className="material-symbols-outlined">menu</span>
-            </div>
           </div>
         )}
       </div>

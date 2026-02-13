@@ -398,8 +398,8 @@ export const Bookings = () => {
 
     return (
       <Card key={isGroup ? group!.id : booking.id} className="overflow-hidden mb-4">
-        <CardContent className="p-5">
-          <div className="flex gap-5">
+        <CardContent className="p-4 md:p-5">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-5">
             {/* Left Section - Service Details */}
             <div className="flex-1">
               <div className="flex items-start gap-4">
@@ -410,12 +410,12 @@ export const Bookings = () => {
                   <ServiceIcon size={24} color={serviceInfo.color} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-card-title font-medium text-text-primary">
                       {serviceInfo.label}
                     </h3>
                     {isGroup && (
-                      <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold">
+                      <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
                         Package ({group!.bookings.length})
                       </span>
                     )}
@@ -450,7 +450,9 @@ export const Bookings = () => {
 
                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                       <UserIcon size={16} color="#6B7280" />
-                      {booking.provider?.name || (isGroup ? group!.provider?.name : 'Assigning provider...')}
+                      <span className="truncate">
+                        {booking.provider?.name || (isGroup ? group!.provider?.name : 'Assigning provider...')}
+                      </span>
                     </div>
                     {/* OTP Display for User - Only visible to Customers */}
                     {user?.role === 'USER' && (
@@ -469,16 +471,16 @@ export const Bookings = () => {
                         </div>
                       ) : (
                         booking.status === 'ACCEPTED' && booking.startJobOtp && (
-                          <div className="mt-2 text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg inline-block">
-                            <span className="font-semibold text-blue-800">Start OTP: {booking.startJobOtp}</span>
-                            <span className="block text-xs text-blue-600 mt-1">Share with provider on arrival</span>
+                          <div className="mt-2 text-sm text-text-dark bg-blue-50 border border-blue-100 p-2 rounded-lg inline-block w-full md:w-auto">
+                            <span className="font-semibold text-blue-800 block md:inline">Start OTP: {booking.startJobOtp}</span>
+                            <span className="block text-xs text-blue-600 mt-1 md:inline md:ml-2">Share with provider on arrival</span>
                           </div>
                         )
                       )
                     )}
                     {(booking.note || isGroup) && (
-                      <div className="flex items-center gap-2 text-sm text-text-secondary mt-2 bg-gray-50 p-2 rounded">
-                        <span className="text-xs">Note: {booking.note || 'Multiple Booking Package'}</span>
+                      <div className="flex items-center gap-2 text-sm text-text-secondary mt-2 bg-gray-50 p-2 rounded w-full">
+                        <span className="text-xs break-words line-clamp-2">Note: {booking.note || 'Multiple Booking Package'}</span>
                       </div>
                     )}
                   </div>
@@ -487,8 +489,8 @@ export const Bookings = () => {
             </div>
 
             {/* Middle Section - Time & Cost */}
-            <div className="flex flex-col justify-between py-1 min-w-[140px]">
-              <div className="flex items-center gap-2 text-sm text-text-secondary mb-3">
+            <div className="flex flex-row md:flex-col justify-between md:justify-start gap-4 md:gap-1 border-t border-b md:border-0 border-slate-50 py-3 md:py-1 md:min-w-[140px]">
+              <div className="flex items-center gap-2 text-sm text-text-secondary mb-0 md:mb-3">
                 <ClockIcon size={16} color="#6B7280" />
                 <span>{isGroup ? 'Daily Service' : formatBookingTime(booking)}</span>
               </div>
@@ -503,9 +505,14 @@ export const Bookings = () => {
             </div>
 
             {/* Right Section - Status & Actions */}
-            <div className="flex flex-col justify-center gap-3 min-w-[180px] border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-              {/* Status Badge */}
-              <div className="flex justify-end mb-2">
+            <div className="flex flex-col justify-center gap-3 md:min-w-[180px] md:border-l border-slate-100 md:pl-6">
+              {/* Status Badge - Hidden on mobile as it often duplicates info, or we can keep it at top right if absolutely needed. 
+                  Actually, let's keep it but position it better. 
+                  In this new layout, we might want it at the top of the card or just here.
+                  Let's keep it here but align appropriately.
+              */}
+              <div className="flex justify-between md:justify-end mb-1">
+                <span className="md:hidden text-sm font-medium text-text-muted">Status</span>
                 <div className="flex flex-col items-end gap-1">
                   <div
                     className="px-3 py-1 rounded-full text-xs font-medium"
@@ -519,7 +526,7 @@ export const Bookings = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 w-full">
+              <div className="flex flex-col gap-2 w-full mt-2 md:mt-0">
                 {/* Actions - Simplified for Group */}
 
                 {/* Track Service Button for Users */}

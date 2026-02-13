@@ -144,7 +144,17 @@ export const ProviderDetailModal = ({
 
         } catch (error: any) {
             console.error('Payment initiation failed', error)
-            toast.error('Failed to initiate payment')
+            // Extract error message from response if available (api wrapper throws Error with text)
+            // The api wrapper throws an Error object where message is the response text
+            const errorMessage = error.message || 'Failed to initiate payment'
+
+            // Try to parse JSON error if possible
+            try {
+                const errorJson = JSON.parse(errorMessage)
+                toast.error(errorJson.message || errorMessage)
+            } catch {
+                toast.error(errorMessage)
+            }
         } finally {
             setIsBooking(false)
         }
@@ -219,7 +229,7 @@ export const ProviderDetailModal = ({
 
                         {/* Thumbnail Gallery */}
                         {portfolioImages.length > 1 && (
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 {portfolioImages.map((image, idx) => (
                                     <button
                                         key={idx}
@@ -242,9 +252,9 @@ export const ProviderDetailModal = ({
                 )}
 
                 {/* Provider Header */}
-                <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-4">
+                    <div className="flex-1 w-full">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
                             <h2 className="text-2xl font-bold text-gray-900">
                                 {provider.user?.name || 'Provider'}
                             </h2>
@@ -252,7 +262,7 @@ export const ProviderDetailModal = ({
                                 {provider.isAvailable ? 'Available Now' : 'Busy'}
                             </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                                 <UserIcon size={16} />
                                 {SERVICE_TYPES[provider.serviceType] || provider.serviceType}
@@ -265,11 +275,11 @@ export const ProviderDetailModal = ({
                             )}
                             <span className="flex items-center gap-1">
                                 <MapPinIcon size={16} />
-                                {provider.user?.city || 'Location not set'}
+                                <span className="truncate max-w-[150px]">{provider.user?.city || 'Location not set'}</span>
                             </span>
                         </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center md:flex-col justify-between w-full md:w-auto md:items-end gap-2 md:gap-0 md:text-right border-t md:border-t-0 pt-3 md:pt-0 mt-1 md:mt-0">
                         <div className="flex items-center gap-1 mb-1">
                             <StarIcon size={20} color="#FCD34D" />
                             <span className="text-lg font-bold text-gray-900">
@@ -291,12 +301,12 @@ export const ProviderDetailModal = ({
                 {provider.description && (
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">About</h3>
-                        <p className="text-gray-600 leading-relaxed">{provider.description}</p>
+                        <p className="text-gray-600 leading-relaxed text-sm md:text-base">{provider.description}</p>
                     </div>
                 )}
 
                 {/* Services & Credentials */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Service Menu */}
                     <div className="bg-gray-50 rounded-xl p-4">
                         <h3 className="text-sm font-semibold text-gray-900 mb-3">Service Menu</h3>
@@ -313,14 +323,14 @@ export const ProviderDetailModal = ({
                                             : 'border-gray-200 hover:border-gray-300 hover:bg-white'
                                             }`}
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="font-medium text-gray-900">{service.name}</div>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-gray-900 truncate">{service.name}</div>
                                                 {service.description && (
-                                                    <div className="text-xs text-gray-500 mt-1">{service.description}</div>
+                                                    <div className="text-xs text-gray-500 mt-1 line-clamp-2">{service.description}</div>
                                                 )}
                                             </div>
-                                            <div className="text-right ml-2">
+                                            <div className="text-right shrink-0">
                                                 <div className="font-bold text-blue-600">₹{service.price}</div>
                                                 <div className="text-xs text-gray-500">/{service.unit}</div>
                                             </div>
@@ -334,7 +344,7 @@ export const ProviderDetailModal = ({
                     </div>
 
                     {/* Credentials */}
-                    <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="bg-gray-50 rounded-xl p-4 h-fit">
                         <h3 className="text-sm font-semibold text-gray-900 mb-3">Credentials</h3>
                         <div className="space-y-2">
                             {provider.resumeUrl && (
@@ -421,7 +431,7 @@ export const ProviderDetailModal = ({
                                 {/* Payment Method Selection */}
                                 <div className="mt-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                                    <div className="flex gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-4">
                                         <label className={`flex-1 flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'ONLINE'
                                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                                             : 'border-gray-200 hover:border-gray-300'
@@ -460,7 +470,7 @@ export const ProviderDetailModal = ({
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3 mt-4">
+                                <div className="flex flex-col-reverse sm:flex-row gap-3 mt-4">
                                     <Button variant="outline" className="flex-1" onClick={onClose}>
                                         Close
                                     </Button>
@@ -473,14 +483,14 @@ export const ProviderDetailModal = ({
                                         {!provider.isAvailable
                                             ? 'Provider Offline'
                                             : serviceOfferings.length > 0 && !selectedService
-                                                ? 'Select a Service'
+                                                ? 'Select Service'
                                                 : selectedService
                                                     ? paymentMethod === 'CASH'
-                                                        ? `Book with Cash - ₹${selectedService.price}`
-                                                        : `Pay & Book - ₹${selectedService.price}`
+                                                        ? `Book Cash - ₹${selectedService.price}`
+                                                        : `Pay - ₹${selectedService.price}`
                                                     : paymentMethod === 'CASH'
-                                                        ? `Book with Cash - ₹${provider.basePrice || 'TBD'}`
-                                                        : `Pay & Book - ₹${provider.basePrice || 'TBD'}`}
+                                                        ? `Book Cash - ₹${provider.basePrice || 'TBD'}`
+                                                        : `Pay - ₹${provider.basePrice || 'TBD'}`}
                                     </Button>
                                 </div>
                             </>

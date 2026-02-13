@@ -57,11 +57,11 @@ export const Dashboard = () => {
 
     fetchData()
   }, [user])
-  
+
   /* Auto-refresh on booking-related notifications */
   const { notifications } = useNotifications()
   const [lastProcessedNotificationId, setLastProcessedNotificationId] = useState<number | null>(null)
-  
+
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0]
@@ -76,7 +76,7 @@ export const Dashboard = () => {
           latest.title.toLowerCase().includes('rejected') ||
           latest.title.toLowerCase().includes('cancelled') ||
           latest.title.toLowerCase().includes('completed')
-        
+
         if (isBookingRelated) {
           console.log('New booking notification received, refreshing dashboard...', latest.id)
           const fetchData = async () => {
@@ -84,7 +84,7 @@ export const Dashboard = () => {
             try {
               if (user.role === 'USER') {
                 const bookings = await bookingService.getBookingsByUser(user.id)
-                
+
                 // Find active booking (ACCEPTED or IN_PROGRESS status)
                 // Prioritize IN_PROGRESS, then check for ACCEPTED bookings that are for TODAY
                 const active = bookings.find(b =>
@@ -188,7 +188,7 @@ export const Dashboard = () => {
 
       {/* Active Service */}
       {activeBooking && (
-        <div className="bg-primary rounded-3xl p-8 relative overflow-hidden">
+        <div className="bg-primary rounded-3xl p-6 md:p-8 relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-white text-xl font-bold mb-2">Active Service</h3>
             <p className="text-white/80 text-sm mb-6">{getStatusText()}</p>

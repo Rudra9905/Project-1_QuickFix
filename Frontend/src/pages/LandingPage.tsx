@@ -103,8 +103,15 @@ export const LandingPage = () => {
               Try Now
             </button>
           </div>
-          <div className="md:hidden text-white cursor-pointer hover:bg-white/10 p-2 rounded-full transition-colors">
-            <span className="material-symbols-outlined block">menu</span>
+          <div className="md:hidden flex items-center gap-3">
+            <button
+              onClick={handleLogin}
+              className="px-4 py-2 rounded-full bg-white/20 text-white font-bold text-xs hover:bg-white/30 transition-colors backdrop-blur-sm border border-white/20">
+              Try Now
+            </button>
+            <div className="text-white cursor-pointer hover:bg-white/10 p-2 rounded-full transition-colors">
+              <span className="material-symbols-outlined block">menu</span>
+            </div>
           </div>
         </div>
       </header>
@@ -125,9 +132,9 @@ export const LandingPage = () => {
                   <span className="text-xs font-semibold text-indigo-900 tracking-wide uppercase">Live: {stats.activeProviders} Pros available now</span>
                 </div>
 
-                <h1 className="text-slate-900 text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tight">
+                <h1 className="text-slate-900 text-4xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tight">
                   Expert Help <br className="hidden lg:block" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#6366F1]" style={{ fontSize: '3rem' }}>in 30 Mins.</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C3AED] to-[#6366F1]" style={{ fontSize: 'inherit' }}>in 30 Mins.</span>
                 </h1>
 
                 <p className="text-slate-500 text-lg md:text-xl leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
@@ -211,8 +218,8 @@ export const LandingPage = () => {
           <div className="max-w-[1200px] mx-auto px-4 md:px-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
               <div>
-                <span className="text-[#7C3AED] font-bold tracking-wider uppercase text-sm" style={{ fontSize: '3rem' }}>Services</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mt-2" style={{ fontSize: '2rem' }}>Whatever breaks, we fix.</h2>
+                <span className="text-[#7C3AED] font-bold tracking-wider uppercase text-sm">Services</span>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Whatever breaks, we fix.</h2>
               </div>
             </div>
 
