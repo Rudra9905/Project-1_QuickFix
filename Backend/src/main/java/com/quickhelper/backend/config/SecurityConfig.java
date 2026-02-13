@@ -60,6 +60,7 @@ public class SecurityConfig {
                         // Allowing bookings for now to fix provider dashboard access issues
                         .requestMatchers("/api/bookings/**").permitAll()
                         .requestMatchers("/api/notifications/**").permitAll()
+                        .requestMatchers("/api/reviews/**").permitAll()
                         // Admin endpoints still restricted
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // AI Endpoint

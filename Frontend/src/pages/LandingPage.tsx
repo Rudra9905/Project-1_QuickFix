@@ -276,8 +276,7 @@ export const LandingPage = () => {
         <section className="w-full py-16 px-4 md:px-8">
           <div className="max-w-[1200px] mx-auto relative rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-900/20 group">
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-              style={{ backgroundImage: 'url(/city-blur.png)' }}
+              className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 opacity-50"
             ></div>
             <div className="absolute inset-0 bg-gradient-to-r from-[#7C3AED]/95 to-[#6366F1]/90"></div>
 
