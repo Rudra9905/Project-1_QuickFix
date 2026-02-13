@@ -48,6 +48,7 @@ public class Booking {
     private String preferredTime;
 
     @CreationTimestamp
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // Created timestamp
 

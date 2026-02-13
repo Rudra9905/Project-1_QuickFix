@@ -27,7 +27,7 @@ public class AIService {
     @Value("${gemini.api-key:}")
     private String geminiApiKey;
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
 
     public ProblemAnalysisDto analyzeProblem(MultipartFile image, Double lat, Double lng) throws IOException {
         System.out.println("=== AI Analysis Request Received ===");

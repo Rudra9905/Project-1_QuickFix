@@ -64,10 +64,7 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   }, [])
 
   const getRemainingTime = (createdAt: string) => {
-    // When running locally (Windows), backend sends local time (e.g. IST).
-    // Appending 'Z' forces it to be treated as UTC, which results in a +5:30 offset
-    // causing the timer to show ~5h 30m remaining instead of 5m.
-    // We revert to standard parsing which treats ISO strings without Z as local time.
+    // standard parsing which treats ISO strings with Z as UTC.
     const created = new Date(createdAt)
     const expiresAt = new Date(created.getTime() + 5 * 60 * 1000) // 5 minutes
     const diff = expiresAt.getTime() - currentDate.getTime()
