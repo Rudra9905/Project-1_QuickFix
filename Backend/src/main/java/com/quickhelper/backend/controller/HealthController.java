@@ -46,4 +46,10 @@ public class HealthController {
         DebugUtil.logInfo("WebSocket system health check successful");
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/ping")
+    // Simple ping for keep-alive services
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("Pong: " + LocalDateTime.now());
+    }
 }
