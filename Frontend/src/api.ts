@@ -32,8 +32,15 @@ export type Booking = {
   status: string // Current booking status
 }
 
-// API base URL: empty because all paths below already include the /api prefix
-const API_BASE = ''
+// API base URL: prefer env in production; keep empty for same-origin dev
+const RAW_API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (import.meta as any).env?.VITE_API_BASE || ''
+const API_BASE = RAW_API_BASE.replace(/\/+$/, '')
+
+const buildApiUrl = (path: string) => {
+  if (!API_BASE) return path
+  if (path.startsWith('/')) return `${API_BASE}${path}`
+  return `${API_BASE}/${path}`
+}
 
 // Generic API function: makes HTTP requests to the backend API
 // @param path - API endpoint path (e.g., '/api/auth/login')
@@ -49,7 +56,7 @@ export async function api<T>(
   token?: string
 ): Promise<T> {
   // Make HTTP request to the API
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     ...options, // Spread provided options (method, body, etc.)
     headers: {
       'Content-Type': 'application/json', // Set content type to JSON
@@ -64,8 +71,23 @@ export async function api<T>(
     throw new Error(text || `Request failed: ${res.status}`) // Throw error with message
   }
 
-  // Parse and return JSON response
-  return res.json() as Promise<T>
+  // Parse and return response (handle empty or non-JSON bodies gracefully)
+  if (res.status === 204) {
+    return undefined as T
+  }
+
+  const contentType = res.headers.get('content-type') || ''
+  const text = await res.text()
+
+  if (!text.trim()) {
+    return undefined as T
+  }
+
+  if (contentType.includes('application/json')) {
+    return JSON.parse(text) as T
+  }
+
+  throw new Error(`Unexpected response format: ${contentType || 'unknown'}`)
 }
 
 // Authentication API: functions for user authentication
