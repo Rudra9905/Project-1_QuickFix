@@ -53,6 +53,14 @@ const extractPriceFromNote = (note?: string): number | null => {
   return match ? parseInt(match[1], 10) : null
 }
 
+const parseCreatedAt = (createdAt?: string): Date | null => {
+  if (!createdAt) return null
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(createdAt)
+  const normalized = hasTimezone ? createdAt : `${createdAt}Z`
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   const navigate = useNavigate()
   /* Timer State */
@@ -64,8 +72,8 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
   }, [])
 
   const getRemainingTime = (createdAt: string) => {
-    // standard parsing which treats ISO strings with Z as UTC.
-    const created = new Date(createdAt)
+    const created = parseCreatedAt(createdAt)
+    if (!created) return null
     const expiresAt = new Date(created.getTime() + 5 * 60 * 1000) // 5 minutes
     const diff = expiresAt.getTime() - currentDate.getTime()
 
@@ -321,7 +329,11 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
     const processedIds = new Set<number>()
 
     // Sort by recent first initially
-    const sortedRaw = [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    const sortedRaw = [...list].sort((a, b) => {
+      const dateB = parseCreatedAt(b.createdAt)?.getTime() ?? 0
+      const dateA = parseCreatedAt(a.createdAt)?.getTime() ?? 0
+      return dateB - dateA
+    })
 
     sortedRaw.forEach(booking => {
       if (processedIds.has(booking.id)) return
@@ -373,7 +385,9 @@ export const ProviderDashboard = ({ user }: ProviderDashboardProps) => {
         const dB = calculateDistanceKm(bB) ?? 9999
         return dA - dB
       }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      const dateB = parseCreatedAt(b.createdAt)?.getTime() ?? 0
+      const dateA = parseCreatedAt(a.createdAt)?.getTime() ?? 0
+      return dateB - dateA
     })
   }
 
