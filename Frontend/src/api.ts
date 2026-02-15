@@ -38,8 +38,16 @@ const API_BASE = RAW_API_BASE.replace(/\/+$/, '')
 
 const buildApiUrl = (path: string) => {
   if (!API_BASE) return path
-  if (path.startsWith('/')) return `${API_BASE}${path}`
-  return `${API_BASE}/${path}`
+
+  const base = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const cleanedPath = normalizedPath.startsWith('/api/') ? normalizedPath : normalizedPath
+
+  if (normalizedPath.startsWith('/api/') && API_BASE.endsWith('/api')) {
+    return `${base}${normalizedPath}`
+  }
+
+  return `${API_BASE}${cleanedPath}`
 }
 
 // Generic API function: makes HTTP requests to the backend API
