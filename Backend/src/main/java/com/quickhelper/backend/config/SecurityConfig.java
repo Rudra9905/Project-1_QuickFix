@@ -54,7 +54,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/auth/**", "/auth/**", "/ws/**", "/uploads/**", "/api/stats", "/api/stats/**", "/api/health/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/auth/**", "/ws/**", "/uploads/**", "/api/stats", "/api/stats/**", "/api/health/**", "/loaderio-*.txt").permitAll()
                         // For MVP, allow all provider endpoints (including uploads) without auth
                         .requestMatchers("/api/providers/**").permitAll()
                         // Allowing bookings for now to fix provider dashboard access issues
