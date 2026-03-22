@@ -8,11 +8,23 @@ export interface ChatMessage {
     timestamp?: string
     isRead?: boolean
     bookingId?: number
+    imageUrl?: string
 }
 
 export const chatService = {
     getChatHistory: async (userId1: number, userId2: number, page: number = 0, size: number = 20) => {
         const response = await apiClient.get<any>(`/chat/history/${userId1}/${userId2}?page=${page}&size=${size}`)
+        return response.data
+    },
+
+    uploadMedia: async (file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        const response = await apiClient.post<{ url: string }>('/chat/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
         return response.data
     },
 

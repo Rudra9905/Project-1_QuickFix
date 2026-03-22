@@ -37,6 +37,9 @@ public class ChatMessage {
     // Optional: Link to booking context
     private Long bookingId;
 
+    @Column(length = 1000)
+    private String imageUrl;
+
     @PrePersist
     protected void onCreate() {
         if (timestamp == null) {

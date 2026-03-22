@@ -15,7 +15,9 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [newMessage, setNewMessage] = useState('')
     const [isLoading, setIsLoading] = useState(true)
+    const [isUploading, setIsUploading] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const subscriptionRef = useRef<any>(null)
     const connectionCheckIntervalRef = useRef<any>(null)
     const userRef = useRef<number | null>(null)
@@ -260,7 +262,7 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
     }
 
     const handleSend = () => {
-        if (!user || !newMessage.trim()) return
+        if (!user || (!newMessage.trim() && !isUploading)) return
 
         const msg: ChatMessage = {
             senderId: user.id,
@@ -276,6 +278,35 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
         setMessages(prev => [...prev, msg])
         setNewMessage('')
         scrollToBottom()
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !user) return
+
+        try {
+            setIsUploading(true)
+            const { url } = await chatService.uploadMedia(file)
+            
+            // Send message with image URL
+            const msg: ChatMessage = {
+                senderId: user.id,
+                receiverId: recipientId,
+                content: 'Sent an image',
+                imageUrl: url,
+                timestamp: new Date().toISOString()
+            }
+            
+            websocketService.sendChat(msg)
+            setMessages(prev => [...prev, msg])
+            scrollToBottom()
+        } catch (error) {
+            console.error('Upload failed:', error)
+            alert('Failed to upload image')
+        } finally {
+            setIsUploading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
     }
 
     return (
@@ -311,11 +342,21 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
                     return (
                         <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm ${isMe
-                                ? 'bg-primary text-white rounded-br-none'
+                                ? 'bg-primary !text-white rounded-br-none shadow-md'
                                 : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                                 }`}>
-                                <p>{msg.content}</p>
-                                <span className={`text-[10px] block mt-1 ${isMe ? 'text-white/70' : 'text-gray-400'}`}>
+                                {msg.imageUrl && (
+                                    <div className="mb-2 rounded-lg overflow-hidden border border-white/20">
+                                        <img 
+                                            src={msg.imageUrl} 
+                                            alt="Shared media" 
+                                            className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() => window.open(msg.imageUrl, '_blank')}
+                                        />
+                                    </div>
+                                )}
+                                <p className={isMe ? 'text-white font-medium' : ''}>{msg.content}</p>
+                                <span className={`text-[10px] block mt-1 ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
                                     {msg.timestamp ? format(new Date(msg.timestamp), 'h:mm a') : 'Sending...'}
                                 </span>
                             </div>
@@ -327,7 +368,27 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
 
             {/* Input */}
             <div className="p-3 border-t border-gray-100 bg-white rounded-b-2xl">
-                <form onSubmit={(e) => { e.preventDefault(); handleSend() }} className="flex gap-2">
+                <form onSubmit={(e) => { e.preventDefault(); handleSend() }} className="flex gap-2 items-center">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="p-2 text-gray-400 hover:text-primary transition-colors disabled:opacity-30"
+                        title="Upload Image"
+                    >
+                        {isUploading ? (
+                            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                            <span className="material-symbols-outlined text-2xl">image</span>
+                        )}
+                    </button>
                     <input
                         type="text"
                         value={newMessage}
@@ -337,10 +398,10 @@ export const ChatWindow = ({ recipientId, recipientName, onClose }: ChatWindowPr
                     />
                     <button
                         type="submit"
-                        disabled={!newMessage.trim()}
-                        className="bg-primary text-white p-2 rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!newMessage.trim() && !isUploading}
+                        className="bg-primary text-white p-2 rounded-xl hover:bg-primary-dark transition-colors disabled:opacity-40 shadow-sm flex items-center justify-center min-w-[40px]"
                     >
-                        <span className="material-symbols-outlined text-xl">send</span>
+                        <span className="material-symbols-outlined text-xl !text-white">send</span>
                     </button>
                 </form>
             </div>

@@ -2,6 +2,7 @@ package com.quickhelper.backend.controller;
 
 import com.quickhelper.backend.model.ChatMessage;
 import com.quickhelper.backend.service.ChatService;
+import com.quickhelper.backend.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +12,12 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +26,18 @@ public class ChatController {
     
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
+    private final FileStorageService fileStorageService;
+
+    @PostMapping("/api/chat/upload")
+    public ResponseEntity<?> uploadMedia(@RequestParam("file") MultipartFile file) {
+        try {
+            Set<String> allowedTypes = Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
+            String url = fileStorageService.storeFile(file, allowedTypes, 10 * 1024 * 1024, "chat-media");
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IOException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 
     // WebSocket endpoint for sending messages
     // Client sends to: /app/chat
